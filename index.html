@@ -829,18 +829,21 @@
         { word: 'nut', emoji: '🥜', hint: 'n-u-t' },
     ];
 
-        // ========== 音频系统（移动端优化）==========
-    // ========== 音频系统（参照 ket-game，移动端全兼容）==========
+        // ========== 音频系统（完全参照 ket-game）==========
     let _ttsAudio = null;
     let _speechKeepAlive = null;
+    let _currentUtterance = null;
+
+    function getTTSUrl(text) {
+        return 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2';
+    }
 
     function cleanTTSText(text) {
         return text.replace(/,/g, ' ').trim();
     }
 
-    // 语音朗读：优先有道TTS + speechSynthesis 回退
     function speakNow(text) {
-        if (!text) return Promise.resolve();
+        if (!text) return;
         text = cleanTTSText(text);
         try {
             if (!_ttsAudio) {
@@ -848,56 +851,55 @@
                 _ttsAudio.preload = 'auto';
             }
             _ttsAudio.pause();
-            _ttsAudio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2';
-            var fallbackTimer = setTimeout(function() { speakNowFallback(text); }, 2000);
-            _ttsAudio.onplay = function() { clearTimeout(fallbackTimer); };
-            _ttsAudio.onerror = function() { clearTimeout(fallbackTimer); speakNowFallback(text); };
-            return _ttsAudio.play().catch(function() {
+            _ttsAudio.src = getTTSUrl(text);
+            const fallbackTimer = setTimeout(() => { speakNowFallback(text); }, 2000);
+            _ttsAudio.onplay = () => { clearTimeout(fallbackTimer); };
+            _ttsAudio.onerror = () => { clearTimeout(fallbackTimer); speakNowFallback(text); };
+            _ttsAudio.play().catch(() => {
                 clearTimeout(fallbackTimer);
                 speakNowFallback(text);
-                return Promise.resolve();
             });
         } catch(e) {
             speakNowFallback(text);
-            return Promise.resolve();
         }
     }
 
     function speakNowFallback(text) {
         if (!('speechSynthesis' in window)) return;
-        var synth = window.speechSynthesis;
+        const synth = window.speechSynthesis;
         clearInterval(_speechKeepAlive);
         synth.cancel();
-        setTimeout(function() {
-            var u = new SpeechSynthesisUtterance(text);
-            u.lang = 'en-US';
-            u.rate = 0.85;
-            u.volume = 1.0;
-            _speechKeepAlive = setInterval(function() {
+        setTimeout(() => {
+            _currentUtterance = new SpeechSynthesisUtterance(text);
+            _currentUtterance.lang = 'en-US';
+            _currentUtterance.rate = 0.85;
+            _currentUtterance.volume = 1.0;
+            _speechKeepAlive = setInterval(() => {
                 if (synth.speaking) synth.resume();
                 else clearInterval(_speechKeepAlive);
             }, 300);
-            u.onend = function() { clearInterval(_speechKeepAlive); };
-            u.onerror = function() { clearInterval(_speechKeepAlive); };
-            synth.speak(u);
+            _currentUtterance.onend = () => clearInterval(_speechKeepAlive);
+            _currentUtterance.onerror = () => clearInterval(_speechKeepAlive);
+            synth.speak(_currentUtterance);
         }, 100);
     }
 
     function unlockAll() {
-        try {
+        try { 
             if (!_ttsAudio) {
                 _ttsAudio = new Audio();
                 _ttsAudio.preload = 'auto';
             }
             _ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-            _ttsAudio.play().catch(function(){});
+            _ttsAudio.play().catch(()=>{});
         } catch(e) {}
     }
 
-    function playTTS(text) { return speakNow(text); }
+    function playTTS(text) { speakNow(text); }
     function activateAudio() { unlockAll(); }
 
-    // ========== 语音接口 ==========
+// ========== 语音接口 ==========
+
     function speakLetter(letter) {
         var data = letterData[letter];
         if (!data) return;
