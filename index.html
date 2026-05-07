@@ -780,7 +780,6 @@
     let blendCurrentWord = null;
     let blendFilledSlots = [];
     let blendUsedChoices = new Set();
-    let activeAudioElement = null; // 用于保存当前播放的 Audio
 
     // ========== 数据 ==========
     const letterData = {
@@ -831,106 +830,95 @@
     ];
 
         // ========== 音频系统（移动端优化）==========
-    // 优先使用 Web Speech API（本地合成，无需网络），有道API作为后备
-    
-    // 清理TTS文本
+    // ========== 音频系统（参照 ket-game，移动端全兼容）==========
+    let _ttsAudio = null;
+    let _speechKeepAlive = null;
+
     function cleanTTSText(text) {
         return text.replace(/,/g, ' ').trim();
     }
 
-    // 播放音频 - 必须在用户点击事件内调用！
+    // 语音朗读：优先有道TTS + speechSynthesis 回退
     function speakNow(text) {
-        if (!text) return;
+        if (!text) return Promise.resolve();
         text = cleanTTSText(text);
-        console.log('speakNow:', text);
-        
-        // 方案1（优先）：Web Speech API - 本地合成，移动端兼容性好
-        if ('speechSynthesis' in window) {
-            try {
-                const synth = window.speechSynthesis;
-                synth.cancel(); // 停止当前播放
-                
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.85;
-                utterance.volume = 1.0;
-                utterance.pitch = 1.0;
-                
-                utterance.onstart = () => console.log('Speech started');
-                utterance.onend = () => console.log('Speech ended');
-                utterance.onerror = (e) => {
-                    console.log('Speech error, trying Youdao TTS:', e.error);
-                    speakWithYoudao(text); // 回退到有道TTS
-                };
-                
-                console.log('Trying Web Speech API...');
-                synth.speak(utterance);
-                return; // 成功调用后立即返回
-            } catch(e) {
-                console.log('Web Speech API failed:', e.message);
-            }
-        }
-        
-        // 方案2（后备）：有道词典TTS
-        speakWithYoudao(text);
-    }
-    
-    // 使用有道TTS API
-    function speakWithYoudao(text) {
         try {
-            const audio = new Audio();
-            audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2';
-            audio.preload = 'auto';
-            
-            const promise = audio.play();
-            if (promise) {
-                promise.catch((e) => {
-                    console.log('Youdao TTS failed:', e.message);
-                });
+            if (!_ttsAudio) {
+                _ttsAudio = new Audio();
+                _ttsAudio.preload = 'auto';
             }
-            console.log('Trying Youdao TTS...');
+            _ttsAudio.pause();
+            _ttsAudio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2';
+            var fallbackTimer = setTimeout(function() { speakNowFallback(text); }, 2000);
+            _ttsAudio.onplay = function() { clearTimeout(fallbackTimer); };
+            _ttsAudio.onerror = function() { clearTimeout(fallbackTimer); speakNowFallback(text); };
+            return _ttsAudio.play().catch(function() {
+                clearTimeout(fallbackTimer);
+                speakNowFallback(text);
+                return Promise.resolve();
+            });
         } catch(e) {
-            console.log('Youdao TTS creation failed:', e.message);
+            speakNowFallback(text);
+            return Promise.resolve();
         }
     }
-    
+
+    function speakNowFallback(text) {
+        if (!('speechSynthesis' in window)) return;
+        var synth = window.speechSynthesis;
+        clearInterval(_speechKeepAlive);
+        synth.cancel();
+        setTimeout(function() {
+            var u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US';
+            u.rate = 0.85;
+            u.volume = 1.0;
+            _speechKeepAlive = setInterval(function() {
+                if (synth.speaking) synth.resume();
+                else clearInterval(_speechKeepAlive);
+            }, 300);
+            u.onend = function() { clearInterval(_speechKeepAlive); };
+            u.onerror = function() { clearInterval(_speechKeepAlive); };
+            synth.speak(u);
+        }, 100);
+    }
+
+    function unlockAll() {
+        try {
+            if (!_ttsAudio) {
+                _ttsAudio = new Audio();
+                _ttsAudio.preload = 'auto';
+            }
+            _ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            _ttsAudio.play().catch(function(){});
+        } catch(e) {}
+    }
+
+    function playTTS(text) { return speakNow(text); }
+    function activateAudio() { unlockAll(); }
+
     // ========== 语音接口 ==========
     function speakLetter(letter) {
-        console.log('speakLetter called:', letter);
-        const data = letterData[letter];
-        if (!data) {
-            console.log('No data for letter:', letter);
-            return;
-        }
-        const text = letter + ' ' + data.word;
-        console.log('Speaking:', text);
-        speakNow(text);
-    }// ========== 语音接口 ==========
-    function speakLetter(letter) {
-        console.log('speakLetter called:', letter);
-        const data = letterData[letter];
-        if (!data) {
-            console.log('No data for letter:', letter);
-            return;
-        }
-        const text = letter + ' ' + data.word;
-        console.log('Speaking:', text);
-        playTTS(text);
+        var data = letterData[letter];
+        if (!data) return;
+        speakNow(letter + ' ' + data.word);
     }
 
     function speakWord(word, slowBlend = false) {
         if (slowBlend) {
             const letters = word.split('');
             const spaced = letters.join(' . ');
-            playTTS(spaced + ' . ' + word);
+            speakNow(spaced + ' . ' + word);
         } else {
-            playTTS(word);
+            speakNow(word);
         }
     }
 
     function speakLetterSimple(letter) {
-        playTTS(letter);
+        speakNow(letter);
     }
+
+
 
     // ========== 屏幕切换 ==========
     function switchScreen(screenName) {
@@ -1286,33 +1274,15 @@
         return arr;
     }
 
-    // ========== 首次交互激活音频（兼容微信/移动端）==========
-    function unlockAll() {
-        try { 
-            unlockAudio(); 
-        } catch(e) {
-            console.log('Audio unlock error:', e);
-        }
-    }
-    
-    // 监听多种用户交互事件来确保音频被激活
-    ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
+    // ========== 首次交互解锁音频（与 ket-game 一致）==========
+    ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(function(evt) {
         document.addEventListener(evt, unlockAll, { once: true });
     });
-    
-    // 额外的：在首次用户交互时再次尝试解锁
-    document.addEventListener('touchstart', function() {
-        setTimeout(unlockAudio, 100);
-    }, { once: true });
-    
-    document.addEventListener('click', function() {
-        setTimeout(unlockAudio, 100);
-    }, { once: true });
 
     // 防止手势缩放
-    document.addEventListener('gesturestart', (e) => e.preventDefault());
-    document.addEventListener('gesturechange', (e) => e.preventDefault());
-    document.addEventListener('gestureend', (e) => e.preventDefault());
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function(e) { e.preventDefault(); });
 
     // ========== 启动 ==========
     function init() {
@@ -1320,8 +1290,6 @@
         buildLetterGrid();
         buildListenRound();
         buildBlendRound();
-        // 尝试立即解锁音频（可能在用户交互后调用）
-        unlockAudio();
     }
     init();
 </script>
