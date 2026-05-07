@@ -852,14 +852,18 @@
             }
             _ttsAudio.pause();
             _ttsAudio.src = getTTSUrl(text);
-            const fallbackTimer = setTimeout(() => { speakNowFallback(text); }, 2000);
-            _ttsAudio.onplay = () => { clearTimeout(fallbackTimer); };
-            _ttsAudio.onerror = () => { clearTimeout(fallbackTimer); speakNowFallback(text); };
-            _ttsAudio.play().catch(() => {
-                clearTimeout(fallbackTimer);
-                speakNowFallback(text);
-            });
+            // 关键：在用户手势内立即调用 play()
+            // 即使音频还没下载完，这个调用也必须在手势上下文中
+            // 浏览器会记住这个 play() 请求，等音频就绪后自动播放
+            var playPromise = _ttsAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(function(err) {
+                    console.log('Audio play failed, trying fallback:', err);
+                    speakNowFallback(text);
+                });
+            }
         } catch(e) {
+            console.log('speakNow exception:', e);
             speakNowFallback(text);
         }
     }
@@ -943,6 +947,8 @@
             buildBlendRound();
         } else if (screenName === 'screenExplore') {
             updateExploreDisplay();
+            // 自动播放当前选中字母的发音
+            if (selectedLetter) speakLetter(selectedLetter);
         }
 
         const screenEl = document.getElementById(screenName);
@@ -994,6 +1000,7 @@
     }
 
     // ========== 字母探索 ==========
+    let _lastSelectTime = 0; // 防止 touchstart + click 重复触发
     function buildLetterGrid() {
         letterGrid.innerHTML = '';
         const letters = Object.keys(letterData);
@@ -1002,11 +1009,20 @@
             btn.className = 'letter-btn';
             btn.textContent = letter;
             btn.setAttribute('aria-label', '字母 ' + letter);
-            btn.ontouchstart = function(e) {
-                e.preventDefault();
+            // 移动端：用 touchstart 触发（必须在用户手势内同步调用 play()）
+            btn.addEventListener('touchstart', function(e) {
+                var now = Date.now();
+                if (now - _lastSelectTime < 300) return; // 防抖
+                _lastSelectTime = now;
                 selectLetter(letter, btn);
-            };
-            btn.onclick = function() { selectLetter(letter, btn); };
+            }, { passive: true });
+            // 桌面端：用 click 触发
+            btn.addEventListener('click', function() {
+                var now = Date.now();
+                if (now - _lastSelectTime < 300) return; // 防抖
+                _lastSelectTime = now;
+                selectLetter(letter, btn);
+            });
             letterGrid.appendChild(btn);
         });
         const firstBtn = letterGrid.querySelector('.letter-btn');
