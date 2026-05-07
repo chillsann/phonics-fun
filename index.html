@@ -780,6 +780,7 @@
     let blendCurrentWord = null;
     let blendFilledSlots = [];
     let blendUsedChoices = new Set();
+    let activeAudioElement = null; // 用于保存当前播放的 Audio
 
     // ========== 数据 ==========
     const letterData = {
@@ -829,38 +830,62 @@
         { word: 'nut', emoji: '🥜', hint: 'n-u-t' },
     ];
 
-    // ========== 有道云 TTS 音频 ==========
-    let ttsAudio = null;
-
-    function activateAudio() {
-        if (!ttsAudio) {
-            ttsAudio = new Audio();
-            ttsAudio.preload = 'auto';
+    // ========== 音频播放（稳健版） ==========
+    function createAudioPlayer() {
+        if (activeAudioElement) {
+            activeAudioElement.pause();
+            activeAudioElement.src = '';
+            activeAudioElement = null;
         }
-        // 播放短静音以激活音频上下文
-        const silentDataUri = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-        ttsAudio.src = silentDataUri;
-        ttsAudio.play().then(() => {
-            ttsAudio.pause();
-            ttsAudio.currentTime = 0;
-        }).catch(() => {});
+        const audio = new Audio();
+        audio.preload = 'auto';
+        activeAudioElement = audio;
+
+        // 返回 promise 以便调用方知道播放完成
+        return new Promise((resolve, reject) => {
+            audio.addEventListener('canplaythrough', () => {
+                audio.play().then(resolve).catch(reject);
+            }, { once: true });
+            audio.addEventListener('error', reject, { once: true });
+            // 设置超时，避免一直等待
+            setTimeout(() => reject(new Error('timeout')), 3000);
+        });
     }
 
     function playTTS(text) {
-        if (!ttsAudio) {
-            ttsAudio = new Audio();
-            ttsAudio.preload = 'auto';
+        // 清理可能存在的旧音频
+        if (activeAudioElement) {
+            activeAudioElement.pause();
+            activeAudioElement.src = '';
         }
-        ttsAudio.pause();
-        ttsAudio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=1';
-        const p = ttsAudio.play();
-        if (p) p.catch(e => console.log('TTS play caught:', e.message));
+        const audio = new Audio();
+        activeAudioElement = audio;
+        audio.preload = 'auto';
+        // 使用空格代替逗号，更清晰
+        const cleanText = text.replace(/,/g, ' ');
+        audio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(cleanText) + '&type=1';
+        return audio.play().catch(e => {
+            console.log('TTS play error:', e.message);
+            // 如果被拦截，尝试静音激活后再播放
+            return activateAudio().then(() => audio.play());
+        });
     }
 
+    async function activateAudio() {
+        // 用静音片段激活 AudioContext
+        const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+        try {
+            await audio.play();
+            audio.pause();
+            audio.currentTime = 0;
+        } catch (e) {}
+    }
+
+    // ========== 语音接口 ==========
     function speakLetter(letter) {
         const data = letterData[letter];
         if (!data) return;
-        playTTS(letter + ', ' + data.word);
+        playTTS(letter + ' ' + data.word);
     }
 
     function speakWord(word, slowBlend = false) {
@@ -904,12 +929,13 @@
         if (screenEl) screenEl.scrollTop = 0;
     }
 
-    // 供 HTML onclick 使用的全局函数
+    // 全局跳转函数
     function goMenu() { switchScreen('screenMenu'); }
     function goExplore() { switchScreen('screenExplore'); }
     function goListen() { switchScreen('screenListen'); }
     function goBlend() { switchScreen('screenBlend'); }
 
+    // 重复按钮
     function repeatAction() {
         if (currentScreen === 'screenExplore') {
             speakLetter(selectedLetter);
@@ -920,12 +946,14 @@
         }
     }
 
+    // 大卡片点击
     function onBigLetterClick() {
         speakLetter(selectedLetter);
         bigLetterCard.style.transform = 'scale(0.88)';
         setTimeout(() => { bigLetterCard.style.transform = ''; }, 200);
     }
 
+    // 喇叭点击
     function onSpeakerClick() {
         if (listenAnswered) return;
         playListenSound();
@@ -968,7 +996,7 @@
     function selectLetter(letter, btn) {
         selectedLetter = letter;
         updateExploreDisplay();
-        speakLetter(letter);
+        speakLetter(letter);  // 直接播放，有用户手势
         document.querySelectorAll('.letter-grid .letter-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
     }
@@ -1011,15 +1039,18 @@
             listenOptions.appendChild(btn);
         });
 
-        setTimeout(() => playListenSound(), 400);
+        // 不再自动播放，提示用户点击喇叭
+        listenPrompt.textContent = '点击喇叭听发音，然后选出字母';
     }
 
     function playListenSound() {
         if (listenAnswered) return;
         speakerBtn.classList.add('playing');
         const data = letterData[listenCorrectAnswer];
-        playTTS(listenCorrectAnswer + ', ' + data.word);
-        speakerBtn.classList.remove('playing');
+        // 播放字母和单词，逗号替换为空格
+        playTTS(listenCorrectAnswer + ' ' + data.word).finally(() => {
+            speakerBtn.classList.remove('playing');
+        });
         listenPrompt.textContent = '仔细听...是哪个字母呢？🤔';
     }
 
@@ -1117,23 +1148,22 @@
                 slots[nextIndex].classList.add('filled');
             }
 
-            speakLetterSimple(letter);
+            speakLetterSimple(letter); // 即时播放字母音
             updateBlendSlotHighlight();
 
             if (blendFilledSlots.length === wordLetters.length) {
-                setTimeout(() => {
-                    const fullWord = blendCurrentWord.word;
-                    speakWord(fullWord, true);
-                    addStars(2);
-                    spawnConfetti(blendSlots);
-                    celebrateOverlay.innerHTML = '<span class="celebrate-text">🌟</span>';
-                    setTimeout(() => { celebrateOverlay.innerHTML = ''; }, 1000);
-                    blendWordHint.textContent = fullWord.toUpperCase() + ' 🎉';
-                    btnNextBlend.style.display = 'inline-flex';
-                    blendChoices.querySelectorAll('.blend-choice-btn').forEach(b => {
-                        if (!blendUsedChoices.has(b.dataset.letter)) b.classList.add('used');
-                    });
-                }, 350);
+                // 拼读完成，立即播放单词（在用户手势内）
+                const fullWord = blendCurrentWord.word;
+                speakWord(fullWord, true);
+                addStars(2);
+                spawnConfetti(blendSlots);
+                celebrateOverlay.innerHTML = '<span class="celebrate-text">🌟</span>';
+                setTimeout(() => { celebrateOverlay.innerHTML = ''; }, 1000);
+                blendWordHint.textContent = fullWord.toUpperCase() + ' 🎉';
+                btnNextBlend.style.display = 'inline-flex';
+                blendChoices.querySelectorAll('.blend-choice-btn').forEach(b => {
+                    if (!blendUsedChoices.has(b.dataset.letter)) b.classList.add('used');
+                });
             }
         } else {
             btnElement.classList.add('wrong-shake');
