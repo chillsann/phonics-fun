@@ -1059,11 +1059,26 @@
 
     function selectLetter(letter, btn) {
         selectedLetter = letter;
-        speakLetter(letter);  // 先播放，再更新UI
+        // 直接播放音频（和「测试声音」按钮完全相同的方式）
+        var data = letterData[letter];
+        if (data) {
+            var audio = new Audio();
+            audio.volume = 1.0;
+            audio.src = getTTSUrl(letter + ' ' + data.word);
+            audio.play().catch(function() {
+                // 回退到 speechSynthesis
+                if ('speechSynthesis' in window) {
+                    var u = new SpeechSynthesisUtterance(letter + ' ' + data.word);
+                    u.lang = 'en-US';
+                    window.speechSynthesis.speak(u);
+                }
+            });
+        }
         updateExploreDisplay();
         document.querySelectorAll('.letter-grid .letter-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
     }
+
 
     function updateExploreDisplay() {
         const data = letterData[selectedLetter];
