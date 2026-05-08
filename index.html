@@ -707,6 +707,10 @@
     <div class="screen" id="screenExplore">
         <button class="btn-back" onclick="goMenu()">← 返回</button>
         <div class="explore-display">
+            <div style="margin-top:10px;">
+                <button onclick="testSound()" style="font-size:1rem;padding:8px 16px;">🔊 测试声音</button>
+                <span id="soundTestResult" style="font-size:0.9rem;"></span>
+            </div>
             <div class="big-letter-card" id="bigLetterCard" onclick="onBigLetterClick()">
                 <span class="big-letter" id="bigLetter">A</span>
                 <span class="example-emoji" id="exampleEmoji">🍎</span>
@@ -743,24 +747,7 @@
 <div class="celebrate-overlay" id="celebrateOverlay"></div>
 
 <script>
-    // ========== 调试面板（测试完成后删除）==========
-    var _debugEl = null;
-    function _debugLog(msg) {
-        console.log('[Phonics] ' + msg);
-        if (!_debugEl) {
-            _debugEl = document.createElement('div');
-            _debugEl.id = 'debugPanel';
-            _debugEl.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font-size:11px;font-family:monospace;padding:8px;z-index:99999;max-height:120px;overflow-y:auto;pointer-events:none;';
-            document.body.appendChild(_debugEl);
-        }
-        var line = document.createElement('div');
-        line.textContent = new Date().toLocaleTimeString().slice(-8) + ' ' + msg;
-        _debugEl.appendChild(line);
-        _debugEl.scrollTop = _debugEl.scrollHeight;
-        // 只保留最后20条
-        while (_debugEl.children.length > 20) _debugEl.removeChild(_debugEl.firstChild);
-    }
-
+    
     // ========== 全局 DOM 引用 ==========
     const starBadge = document.getElementById('starBadge');
     const starCountEl = document.getElementById('starCount');
@@ -848,7 +835,6 @@
     ];
 
         // ========== 音频系统（完全参照 ket-game）==========
-    let _ttsAudio = null;
     let _speechKeepAlive = null;
     let _currentUtterance = null;
 
@@ -863,38 +849,27 @@
     function speakNow(text) {
         if (!text) return;
         text = cleanTTSText(text);
-        _debugLog('speakNow: "' + text + '"');
         try {
-            if (!_ttsAudio) {
-                _ttsAudio = new Audio();
-                _ttsAudio.preload = 'auto';
-                _debugLog('Created new Audio element');
-            }
-            _ttsAudio.pause();
-            _ttsAudio.src = getTTSUrl(text);
-            _debugLog('Set src: ' + _ttsAudio.src.slice(0, 50));
-            var playPromise = _ttsAudio.play();
+            var audio = new Audio();
+            audio.preload = 'auto';
+            audio.volume = 1.0;
+            audio.src = getTTSUrl(text);
+            var playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.then(function() {
-                    _debugLog('✅ Audio played OK');
+                    // 播放成功
                 }).catch(function(err) {
-                    _debugLog('❌ Audio play failed: ' + err);
                     speakNowFallback(text);
                 });
-            } else {
-                _debugLog('play() returned undefined');
             }
         } catch(e) {
-            _debugLog('❌ speakNow exception: ' + e.message);
             speakNowFallback(text);
         }
     }
 
     function speakNowFallback(text) {
-        _debugLog('speakNowFallback: "' + text + '"');
         if (!('speechSynthesis' in window)) {
-            _debugLog('❌ speechSynthesis not available');
-            return;
+                return;
         }
         var synth = window.speechSynthesis;
         clearInterval(_speechKeepAlive);
@@ -915,22 +890,38 @@
     }
 
     function unlockAll() {
-        _debugLog('unlockAll called');
-        try { 
-            if (!_ttsAudio) {
-                _ttsAudio = new Audio();
-                _ttsAudio.preload = 'auto';
-            }
-            _ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-            _ttsAudio.play().then(function() {
-                _debugLog('✅ Audio unlocked');
-            }).catch(function(e) {
-                _debugLog('Audio unlock note: ' + e);
-            });
-        } catch(e) {
-            _debugLog('unlockAll error: ' + e.message);
-        }
+        // 创建临时 Audio 对象解锁音频上下文（用户手势触发时调用）
+        try {
+            var tempAudio = new Audio();
+            tempAudio.volume = 0;
+            tempAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            tempAudio.play().catch(function(){});
+        } catch(e) {}
     }
+
+    // 测试声音函数
+    function testSound() {
+        var result = document.getElementById('soundTestResult');
+        result.textContent = '正在播放...';
+        // 先试英文
+        var a = new Audio();
+        a.src = getTTSUrl('hello');
+        a.play().then(function() {
+            result.textContent = '✅ 英文发音正常';
+            setTimeout(function() { result.textContent = ''; }, 3000);
+        }).catch(function() {
+            // 如果英文不行，试中文语音
+            result.textContent = '英文发音失败，尝试中文...';
+            if ('speechSynthesis' in window) {
+                var u = new SpeechSynthesisUtterance('发音测试');
+                u.lang = 'zh-CN';
+                window.speechSynthesis.speak(u);
+                result.textContent = '✅ 中文语音已播放，能听到吗？';
+                setTimeout(function() { result.textContent = ''; }, 3000);
+            }
+        });
+    }
+
 
     function playTTS(text) { speakNow(text); }
     function activateAudio() { unlockAll(); }
@@ -938,11 +929,9 @@
 // ========== 语音接口 ==========
 
     function speakLetter(letter) {
-        _debugLog('speakLetter: ' + letter);
         var data = letterData[letter];
         if (!data) {
-            _debugLog('❌ No data for letter: ' + letter);
-            return;
+                return;
         }
         speakNow(letter + ' ' + data.word);
     }
@@ -983,12 +972,10 @@
             btnNextBlend.style.display = 'none';
             buildBlendRound();
         } else if (screenName === 'screenExplore') {
-            _debugLog('Switching to screenExplore, selectedLetter=' + selectedLetter);
-            updateExploreDisplay();
+                updateExploreDisplay();
             // 自动播放当前选中字母的发音
             if (selectedLetter) {
-                _debugLog('Auto-playing letter: ' + selectedLetter);
-                speakLetter(selectedLetter);
+                        speakLetter(selectedLetter);
             }
         }
 
@@ -1071,7 +1058,6 @@
     }
 
     function selectLetter(letter, btn) {
-        _debugLog('selectLetter: ' + letter);
         selectedLetter = letter;
         speakLetter(letter);  // 先播放，再更新UI
         updateExploreDisplay();
