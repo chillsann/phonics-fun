@@ -1058,9 +1058,11 @@
     }
 
     function selectLetter(letter, btn) {
+        alert("selectLetter called: " + letter);
         selectedLetter = letter;
         // 直接播放音频（和「测试声音」按钮完全相同的方式）
         var data = letterData[letter];
+        alert("data=" + (data ? data.word : "NULL"));
         if (data) {
             var audio = new Audio();
             audio.volume = 1.0;
