@@ -707,10 +707,6 @@
     <div class="screen" id="screenExplore">
         <button class="btn-back" onclick="goMenu()">← 返回</button>
         <div class="explore-display">
-            <div style="margin-top:10px;">
-                <button onclick="testSound()" style="font-size:1rem;padding:8px 16px;">🔊 测试声音</button>
-                <span id="soundTestResult" style="font-size:0.9rem;"></span>
-            </div>
             <div class="big-letter-card" id="bigLetterCard" onclick="onBigLetterClick()">
                 <span class="big-letter" id="bigLetter">A</span>
                 <span class="example-emoji" id="exampleEmoji">🍎</span>
@@ -849,23 +845,15 @@
     function speakNow(text) {
         if (!text) return;
         text = cleanTTSText(text);
-        try {
-            var audio = new Audio();
-            audio.preload = 'auto';
-            audio.volume = 1.0;
-            audio.src = getTTSUrl(text);
-            var playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(function() {
-                    // 播放成功
-                }).catch(function(err) {
-                    speakNowFallback(text);
-                });
-            }
-        } catch(e) {
+        var a = new Audio();
+        a.src = getTTSUrl(text);
+        a.play().then(function() {
+            // OK
+        }).catch(function() {
             speakNowFallback(text);
-        }
+        });
     }
+
 
     function speakNowFallback(text) {
         if (!('speechSynthesis' in window)) {
@@ -899,28 +887,6 @@
         } catch(e) {}
     }
 
-    // 测试声音函数
-    function testSound() {
-        var result = document.getElementById('soundTestResult');
-        result.textContent = '正在播放...';
-        // 先试英文
-        var a = new Audio();
-        a.src = getTTSUrl('hello');
-        a.play().then(function() {
-            result.textContent = '✅ 英文发音正常';
-            setTimeout(function() { result.textContent = ''; }, 3000);
-        }).catch(function() {
-            // 如果英文不行，试中文语音
-            result.textContent = '英文发音失败，尝试中文...';
-            if ('speechSynthesis' in window) {
-                var u = new SpeechSynthesisUtterance('发音测试');
-                u.lang = 'zh-CN';
-                window.speechSynthesis.speak(u);
-                result.textContent = '✅ 中文语音已播放，能听到吗？';
-                setTimeout(function() { result.textContent = ''; }, 3000);
-            }
-        });
-    }
 
 
     function playTTS(text) { speakNow(text); }
@@ -1029,6 +995,7 @@
 
     // ========== 字母探索 ==========
     let _lastSelectTime = 0; // 防止 touchstart + click 重复触发
+    // ========== 字母探索 ==========
     function buildLetterGrid() {
         letterGrid.innerHTML = '';
         const letters = Object.keys(letterData);
@@ -1036,49 +1003,36 @@
             const btn = document.createElement('button');
             btn.className = 'letter-btn';
             btn.textContent = letter;
-            btn.setAttribute('aria-label', '字母 ' + letter);
-            // 移动端：用 touchstart 触发（必须在用户手势内同步调用 play()）
-            btn.addEventListener('touchstart', function(e) {
-                var now = Date.now();
-                if (now - _lastSelectTime < 300) return; // 防抖
-                _lastSelectTime = now;
-                selectLetter(letter, btn);
-            }, { passive: true });
-            // 桌面端：用 click 触发
-            btn.addEventListener('click', function() {
-                var now = Date.now();
-                if (now - _lastSelectTime < 300) return; // 防抖
-                _lastSelectTime = now;
-                selectLetter(letter, btn);
-            });
+            btn.setAttribute('aria-label', 'Letter ' + letter);
+            // 用 onclick 和「测试声音」按钮完全一样
+            btn.onclick = function() { selectLetter(letter, btn); };
             letterGrid.appendChild(btn);
         });
         const firstBtn = letterGrid.querySelector('.letter-btn');
         if (firstBtn) firstBtn.classList.add('selected');
     }
 
+
     function selectLetter(letter, btn) {
-
         selectedLetter = letter;
-        // 直接播放音频（和「测试声音」按钮完全相同的方式）
         var data = letterData[letter];
-
+        updateExploreDisplay();
+        document.querySelectorAll('.letter-grid .letter-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        // 播放：和 testSound() 完全一样的代码
         if (data) {
-            var audio = new Audio();
-            audio.volume = 1.0;
-            audio.src = getTTSUrl(letter + ' ' + data.word);
-            audio.play().catch(function() {
-                // 回退到 speechSynthesis
+            var a = new Audio();
+            a.src = getTTSUrl(letter + ' ' + data.word);
+            a.play().then(function() {
+                // OK
+            }).catch(function() {
                 if ('speechSynthesis' in window) {
                     var u = new SpeechSynthesisUtterance(letter + ' ' + data.word);
-                    u.lang = 'en-US';
+                    u.lang = "en-US";
                     window.speechSynthesis.speak(u);
                 }
             });
         }
-        updateExploreDisplay();
-        document.querySelectorAll('.letter-grid .letter-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
     }
 
 
