@@ -743,6 +743,24 @@
 <div class="celebrate-overlay" id="celebrateOverlay"></div>
 
 <script>
+    // ========== 调试面板（测试完成后删除）==========
+    var _debugEl = null;
+    function _debugLog(msg) {
+        console.log('[Phonics] ' + msg);
+        if (!_debugEl) {
+            _debugEl = document.createElement('div');
+            _debugEl.id = 'debugPanel';
+            _debugEl.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font-size:11px;font-family:monospace;padding:8px;z-index:99999;max-height:120px;overflow-y:auto;pointer-events:none;';
+            document.body.appendChild(_debugEl);
+        }
+        var line = document.createElement('div');
+        line.textContent = new Date().toLocaleTimeString().slice(-8) + ' ' + msg;
+        _debugEl.appendChild(line);
+        _debugEl.scrollTop = _debugEl.scrollHeight;
+        // 只保留最后20条
+        while (_debugEl.children.length > 20) _debugEl.removeChild(_debugEl.firstChild);
+    }
+
     // ========== 全局 DOM 引用 ==========
     const starBadge = document.getElementById('starBadge');
     const starCountEl = document.getElementById('starCount');
@@ -845,32 +863,40 @@
     function speakNow(text) {
         if (!text) return;
         text = cleanTTSText(text);
+        _debugLog('speakNow: "' + text + '"');
         try {
             if (!_ttsAudio) {
                 _ttsAudio = new Audio();
                 _ttsAudio.preload = 'auto';
+                _debugLog('Created new Audio element');
             }
             _ttsAudio.pause();
             _ttsAudio.src = getTTSUrl(text);
-            // 关键：在用户手势内立即调用 play()
-            // 即使音频还没下载完，这个调用也必须在手势上下文中
-            // 浏览器会记住这个 play() 请求，等音频就绪后自动播放
+            _debugLog('Set src: ' + _ttsAudio.src.slice(0, 50));
             var playPromise = _ttsAudio.play();
             if (playPromise !== undefined) {
-                playPromise.catch(function(err) {
-                    console.log('Audio play failed, trying fallback:', err);
+                playPromise.then(function() {
+                    _debugLog('✅ Audio played OK');
+                }).catch(function(err) {
+                    _debugLog('❌ Audio play failed: ' + err);
                     speakNowFallback(text);
                 });
+            } else {
+                _debugLog('play() returned undefined');
             }
         } catch(e) {
-            console.log('speakNow exception:', e);
+            _debugLog('❌ speakNow exception: ' + e.message);
             speakNowFallback(text);
         }
     }
 
     function speakNowFallback(text) {
-        if (!('speechSynthesis' in window)) return;
-        const synth = window.speechSynthesis;
+        _debugLog('speakNowFallback: "' + text + '"');
+        if (!('speechSynthesis' in window)) {
+            _debugLog('❌ speechSynthesis not available');
+            return;
+        }
+        var synth = window.speechSynthesis;
         clearInterval(_speechKeepAlive);
         synth.cancel();
         setTimeout(() => {
@@ -889,14 +915,21 @@
     }
 
     function unlockAll() {
+        _debugLog('unlockAll called');
         try { 
             if (!_ttsAudio) {
                 _ttsAudio = new Audio();
                 _ttsAudio.preload = 'auto';
             }
             _ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-            _ttsAudio.play().catch(()=>{});
-        } catch(e) {}
+            _ttsAudio.play().then(function() {
+                _debugLog('✅ Audio unlocked');
+            }).catch(function(e) {
+                _debugLog('Audio unlock note: ' + e);
+            });
+        } catch(e) {
+            _debugLog('unlockAll error: ' + e.message);
+        }
     }
 
     function playTTS(text) { speakNow(text); }
@@ -905,8 +938,12 @@
 // ========== 语音接口 ==========
 
     function speakLetter(letter) {
+        _debugLog('speakLetter: ' + letter);
         var data = letterData[letter];
-        if (!data) return;
+        if (!data) {
+            _debugLog('❌ No data for letter: ' + letter);
+            return;
+        }
         speakNow(letter + ' ' + data.word);
     }
 
@@ -946,9 +983,13 @@
             btnNextBlend.style.display = 'none';
             buildBlendRound();
         } else if (screenName === 'screenExplore') {
+            _debugLog('Switching to screenExplore, selectedLetter=' + selectedLetter);
             updateExploreDisplay();
             // 自动播放当前选中字母的发音
-            if (selectedLetter) speakLetter(selectedLetter);
+            if (selectedLetter) {
+                _debugLog('Auto-playing letter: ' + selectedLetter);
+                speakLetter(selectedLetter);
+            }
         }
 
         const screenEl = document.getElementById(screenName);
@@ -1030,9 +1071,10 @@
     }
 
     function selectLetter(letter, btn) {
+        _debugLog('selectLetter: ' + letter);
         selectedLetter = letter;
+        speakLetter(letter);  // 先播放，再更新UI
         updateExploreDisplay();
-        speakLetter(letter);  // 直接播放，有用户手势
         document.querySelectorAll('.letter-grid .letter-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
     }
