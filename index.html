@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Phonics Fun 🎈 自然拼读乐园</title>
     <style>
         :root {
@@ -34,104 +33,135 @@
         }
 
         * {
-            margin: 0; padding: 0; box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            user-select: none; -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         html, body {
-            height: 100%; width: 100%; overflow: hidden;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
             font-family: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
             background: linear-gradient(160deg, #fdf2f8 0%, #fce7f3 20%, #ede9fe 50%, #dbeafe 80%, #fef3c7 100%);
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             touch-action: manipulation;
         }
 
-        /* 重新设计的蒙层，更简洁可靠 */
-        #activateOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: white; font-size: 2rem; font-weight: bold; text-align: center;
+        /* 激活蒙层 */
+        #audioOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.65);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
             cursor: pointer;
         }
-        #activateOverlay button {
-            margin-top: 1.5rem; padding: 1rem 2.5rem;
-            font-size: 1.4rem; font-weight: bold; border: none; border-radius: 3rem;
-            background: white; color: #f472b6;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4); cursor: pointer;
-            pointer-events: auto;
+        #audioOverlay button {
+            margin-top: 1.5rem;
+            padding: 1rem 2.5rem;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 3rem;
+            background: white;
+            color: #f472b6;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            cursor: pointer;
         }
 
         .app-container {
-            position: relative; z-index: 1;
-            width: 100%; max-width: 440px; height: 100vh; height: 100dvh; max-height: 850px;
-            display: flex; flex-direction: column;
-            padding: env(safe-area-inset-top, 12px) 16px env(safe-area-inset-bottom, 16px) 16px;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 440px;
+            height: 100vh;
+            height: 100dvh;
+            max-height: 850px;
+            display: flex;
+            flex-direction: column;
+            padding: 12px 16px;
         }
 
-        .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 6px; flex-shrink: 0; }
-        .star-badge { display: flex; align-items: center; gap: 6px; background: var(--card-bg); border-radius: 50px; padding: 8px 16px; box-shadow: var(--shadow); font-weight: 700; font-size: 17px; color: var(--text); }
-        .star-badge.pulse { animation: starPulse 0.5s var(--bounce); }
-        @keyframes starPulse { 0%,100%{transform:scale(1)} 40%{transform:scale(1.25) rotate(-10deg)} 70%{transform:scale(0.95) rotate(5deg)} }
-        .btn-icon { width:44px; height:44px; border-radius:50%; border:none; background:var(--card-bg); box-shadow:var(--shadow); font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s var(--bounce); color:var(--text); }
-        .btn-icon:active { transform:scale(0.9); }
+        .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 6px; }
+        .star-badge { display: flex; align-items: center; gap: 6px; background: var(--card-bg); border-radius: 50px; padding: 8px 16px; font-weight: 700; font-size: 17px; color: var(--text); }
+        .btn-icon { width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--card-bg); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
 
-        .screen { display:none; flex-direction:column; flex:1; overflow-y:auto; overflow-x:hidden; gap:16px; padding:4px 4px 8px; }
-        .screen.active { display:flex; }
-        .menu-header { text-align:center; padding:10px 0 4px; flex-shrink:0; }
-        .mascot { font-size:72px; animation:bounceMascot 1.5s ease-in-out infinite; display:inline-block; filter:drop-shadow(0 8px 16px rgba(244,114,182,0.35)); }
-        @keyframes bounceMascot { 0%,100%{transform:translateY(0)} 25%{transform:translateY(-22px)} 50%{transform:translateY(-6px)} 75%{transform:translateY(-16px)} }
-        .menu-title { font-size:30px; font-weight:800; color:var(--text); }
-        .menu-subtitle { font-size:15px; color:var(--text-light); }
-        .game-cards { display:flex; flex-direction:column; gap:14px; }
-        .game-card { display:flex; align-items:center; gap:14px; background:var(--card-bg); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); cursor:pointer; transition:all 0.25s var(--bounce); border:3px solid transparent; }
-        .game-card:active { transform:scale(0.96); }
-        .card-emoji { font-size:44px; width:56px; text-align:center; }
-        .card-info { flex:1; }
-        .card-title { font-size:18px; font-weight:700; color:var(--text); }
-        .card-desc { font-size:13px; color:var(--text-light); }
-        .card-arrow { font-size:22px; color:#c4b5cc; }
+        .screen { display: none; flex-direction: column; flex: 1; overflow-y: auto; gap: 16px; padding: 4px 4px 8px; }
+        .screen.active { display: flex; }
 
-        .big-letter-card { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:130px; height:150px; background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow-lg); cursor:pointer; border:4px solid #fce7f3; }
-        .big-letter { font-size:64px; font-weight:900; color:var(--text); }
-        .example-emoji { font-size:38px; margin-top:4px; }
-        .tap-hint { font-size:13px; color:var(--text-light); margin-top:6px; }
+        .menu-header { text-align: center; padding: 10px 0 4px; }
+        .mascot { font-size: 72px; animation: bounce 1.5s infinite; display: inline-block; }
+        @keyframes bounce { 0%,100%{transform:translateY(0)} 25%{transform:translateY(-22px)} 50%{transform:translateY(-6px)} 75%{transform:translateY(-16px)} }
+        .menu-title { font-size: 30px; font-weight: 800; color: var(--text); }
+        .menu-subtitle { font-size: 15px; color: var(--text-light); }
 
-        .letter-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
-        .letter-btn { aspect-ratio:1; border-radius:var(--radius-sm); border:2.5px solid #e8dff0; background:var(--card-bg); font-size:20px; font-weight:700; cursor:pointer; color:var(--text); display:flex; align-items:center; justify-content:center; }
-        .letter-btn.selected { background:#fce7f3; border-color:var(--pink); box-shadow:0 0 0 4px rgba(244,114,182,0.18); }
+        .game-cards { display: flex; flex-direction: column; gap: 14px; }
+        .game-card { display: flex; align-items: center; gap: 14px; background: var(--card-bg); border-radius: var(--radius); padding: 16px 18px; cursor: pointer; border: 3px solid transparent; }
+        .game-card:active { transform: scale(0.96); }
+        .card-emoji { font-size: 44px; width: 56px; text-align: center; }
+        .card-info { flex: 1; }
+        .card-title { font-size: 18px; font-weight: 700; color: var(--text); }
+        .card-desc { font-size: 13px; color: var(--text-light); }
+        .card-arrow { font-size: 22px; color: #c4b5cc; }
 
-        .speaker-btn { width:90px; height:90px; border-radius:50%; border:4px solid #ede9fe; background:var(--card-bg); font-size:44px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
-        .listen-options { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-        .listen-option-btn { aspect-ratio:1.3; border-radius:var(--radius); border:3px solid #e8dff0; background:var(--card-bg); font-size:40px; font-weight:900; cursor:pointer; color:var(--text); display:flex; align-items:center; justify-content:center; }
-        .blend-slots { display:flex; justify-content:center; gap:14px; }
-        .blend-slot { width:64px; height:72px; border-radius:var(--radius-sm); border:3px dashed #d4c8e0; background:rgba(255,255,255,0.7); display:flex; align-items:center; justify-content:center; font-size:38px; font-weight:900; color:var(--text); }
-        .blend-letter-choices { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; }
-        .blend-choice-btn { width:56px; height:60px; border-radius:var(--radius-sm); border:2.5px solid #e8dff0; background:var(--card-bg); font-size:30px; font-weight:800; cursor:pointer; color:var(--text); display:flex; align-items:center; justify-content:center; }
-        .celebrate-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:100; display:flex; align-items:center; justify-content:center; }
-        .celebrate-text { font-size:56px; animation:celebPop 0.8s var(--bounce) forwards; }
+        .big-letter-card { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 130px; height: 150px; background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow-lg); cursor: pointer; border: 4px solid #fce7f3; }
+        .big-letter { font-size: 64px; font-weight: 900; color: var(--text); }
+        .example-emoji { font-size: 38px; margin-top: 4px; }
+        .tap-hint { font-size: 13px; color: var(--text-light); margin-top: 6px; }
+
+        .letter-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+        .letter-btn { aspect-ratio: 1; border-radius: var(--radius-sm); border: 2.5px solid #e8dff0; background: var(--card-bg); font-size: 20px; font-weight: 700; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; }
+        .letter-btn.selected { background: #fce7f3; border-color: var(--pink); }
+
+        .speaker-btn { width: 90px; height: 90px; border-radius: 50%; border: 4px solid #ede9fe; background: var(--card-bg); font-size: 44px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .listen-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .listen-option-btn { aspect-ratio: 1.3; border-radius: var(--radius); border: 3px solid #e8dff0; background: var(--card-bg); font-size: 40px; font-weight: 900; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; }
+        .blend-slots { display: flex; justify-content: center; gap: 14px; }
+        .blend-slot { width: 64px; height: 72px; border-radius: var(--radius-sm); border: 3px dashed #d4c8e0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: 900; color: var(--text); }
+        .blend-letter-choices { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+        .blend-choice-btn { width: 56px; height: 60px; border-radius: var(--radius-sm); border: 2.5px solid #e8dff0; background: var(--card-bg); font-size: 30px; font-weight: 800; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; }
+        .blend-choice-btn.used { opacity: 0.35; pointer-events: none; }
+
+        .celebrate-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+        .celebrate-text { font-size: 56px; animation: celebPop 0.8s ease; }
         @keyframes celebPop { 0%{transform:scale(0) rotate(-20deg);opacity:0} 50%{transform:scale(1.3) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:0} }
-        .confetti-particle { position:fixed; pointer-events:none; z-index:99; font-size:24px; animation:confettiFall 1.2s ease-out forwards; }
+
+        .confetti-particle { position: fixed; pointer-events: none; z-index: 99; font-size: 24px; animation: confettiFall 1.2s ease-out forwards; }
         @keyframes confettiFall { 0%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(0.3);opacity:0} }
-        .btn-back { display:inline-flex; align-items:center; gap:6px; background:var(--card-bg); border:2px solid #e8dff0; border-radius:50px; padding:10px 18px; font-size:15px; font-weight:600; cursor:pointer; color:var(--text); }
-        .btn-next { display:inline-flex; align-items:center; gap:6px; background:var(--purple); border:none; border-radius:50px; padding:12px 24px; font-size:16px; font-weight:700; cursor:pointer; color:#fff; }
-        .score-pop { position:fixed; pointer-events:none; z-index:98; font-size:28px; font-weight:900; color:var(--yellow); animation:scoreUp 0.9s ease-out forwards; }
-        @keyframes scoreUp { 0%{transform:translateY(0) scale(0.5);opacity:0} 30%{transform:translateY(-30px) scale(1.3);opacity:1} 100%{transform:translateY(-80px) scale(0.8);opacity:0} }
+
+        .btn-back { display: inline-flex; align-items: center; gap: 6px; background: var(--card-bg); border: 2px solid #e8dff0; border-radius: 50px; padding: 10px 18px; font-size: 15px; font-weight: 600; cursor: pointer; color: var(--text); }
+        .btn-next { background: var(--purple); color: white; border: none; border-radius: 50px; padding: 12px 24px; font-size: 16px; font-weight: 700; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="activateOverlay">
-        <div>🔊<br>点击开启声音</div>
-        <button id="activateBtn">开启</button>
+    <!-- 声音激活层 -->
+    <div id="audioOverlay">
+        <div>🔊<br>点击下方按钮<br>开启声音</div>
+        <button id="activateBtn">开启声音</button>
     </div>
 
     <div class="app-container" id="appContainer">
         <div class="top-bar">
             <button class="btn-icon" onclick="goMenu()">🏠</button>
             <div class="star-badge" id="starBadge">
-                <span class="star-icon">⭐</span>
-                <span id="starCount">0</span>
+                <span>⭐</span> <span id="starCount">0</span>
             </div>
             <button class="btn-icon" id="btnRepeat" style="visibility:hidden;" onclick="repeatAction()">🔊</button>
         </div>
@@ -143,19 +173,19 @@
                 <div class="menu-subtitle">自然拼读乐园 · 点击开始游戏吧</div>
             </div>
             <div class="game-cards">
-                <div class="game-card card-explore" onclick="goExplore()">
+                <div class="game-card" onclick="goExplore()">
                     <div class="card-emoji">🔤</div>
-                    <div class="card-info"><div class="card-title">字母声音探索</div><div class="card-desc">点击字母听发音，认识字母朋友</div></div>
+                    <div class="card-info"><div class="card-title">字母声音探索</div><div class="card-desc">点击字母听发音</div></div>
                     <div class="card-arrow">▶</div>
                 </div>
-                <div class="game-card card-listen" onclick="goListen()">
+                <div class="game-card" onclick="goListen()">
                     <div class="card-emoji">👂</div>
-                    <div class="card-info"><div class="card-title">听音找字母</div><div class="card-desc">听发音，选出正确的字母</div></div>
+                    <div class="card-info"><div class="card-title">听音找字母</div><div class="card-desc">听发音，选字母</div></div>
                     <div class="card-arrow">▶</div>
                 </div>
-                <div class="game-card card-blend" onclick="goBlend()">
+                <div class="game-card" onclick="goBlend()">
                     <div class="card-emoji">🧩</div>
-                    <div class="card-info"><div class="card-title">拼读小火车</div><div class="card-desc">把字母拼在一起，读出单词</div></div>
+                    <div class="card-info"><div class="card-title">拼读小火车</div><div class="card-desc">拼字母，读单词</div></div>
                     <div class="card-arrow">▶</div>
                 </div>
             </div>
@@ -163,7 +193,7 @@
 
         <div class="screen" id="screenExplore">
             <button class="btn-back" onclick="goMenu()">← 返回</button>
-            <div class="explore-display">
+            <div style="text-align:center;">
                 <div class="big-letter-card" id="bigLetterCard" onclick="onBigLetterClick()">
                     <span class="big-letter" id="bigLetter">A</span>
                     <span class="example-emoji" id="exampleEmoji">🍎</span>
@@ -175,9 +205,9 @@
 
         <div class="screen" id="screenListen">
             <button class="btn-back" onclick="goMenu()">← 返回</button>
-            <div class="listen-question-area">
+            <div style="text-align:center;">
                 <button class="speaker-btn" id="speakerBtn" onclick="onSpeakerClick()">🔊</button>
-                <div class="listen-prompt" id="listenPrompt">点击喇叭听发音，然后选出字母</div>
+                <div id="listenPrompt" style="font-size:15px;color:#6b5b73;">点击喇叭听发音，然后选出字母</div>
             </div>
             <div class="listen-options" id="listenOptions"></div>
             <button class="btn-next" id="btnNextListen" style="display:none;" onclick="nextListenQuestion()">下一题 →</button>
@@ -185,9 +215,9 @@
 
         <div class="screen" id="screenBlend">
             <button class="btn-back" onclick="goMenu()">← 返回</button>
-            <div class="blend-image-area">
-                <div class="blend-emoji-display" id="blendEmoji">🐱</div>
-                <div class="blend-word-hint" id="blendWordHint">_ _ _</div>
+            <div style="text-align:center;">
+                <div id="blendEmoji" style="font-size:80px;">🐱</div>
+                <div id="blendWordHint" style="font-size:14px;color:#6b5b73;">_ _ _</div>
             </div>
             <div class="blend-slots" id="blendSlots"></div>
             <div class="blend-letter-choices" id="blendChoices"></div>
@@ -198,7 +228,7 @@
     <div class="celebrate-overlay" id="celebrateOverlay"></div>
 
     <script>
-        // ========== 全局 DOM ==========
+        // ========== 全局 DOM 和状态 ==========
         const starBadge = document.getElementById('starBadge');
         const starCountEl = document.getElementById('starCount');
         const btnRepeat = document.getElementById('btnRepeat');
@@ -209,24 +239,20 @@
             document.getElementById('screenListen'),
             document.getElementById('screenBlend')
         ];
-
         const bigLetterCard = document.getElementById('bigLetterCard');
         const bigLetter = document.getElementById('bigLetter');
         const exampleEmoji = document.getElementById('exampleEmoji');
         const letterGrid = document.getElementById('letterGrid');
-
         const speakerBtn = document.getElementById('speakerBtn');
         const listenPrompt = document.getElementById('listenPrompt');
         const listenOptions = document.getElementById('listenOptions');
         const btnNextListen = document.getElementById('btnNextListen');
-
         const blendEmoji = document.getElementById('blendEmoji');
         const blendWordHint = document.getElementById('blendWordHint');
         const blendSlots = document.getElementById('blendSlots');
         const blendChoices = document.getElementById('blendChoices');
         const btnNextBlend = document.getElementById('btnNextBlend');
 
-        // ========== 状态 ==========
         let totalStars = parseInt(localStorage.getItem('phonicsFunStars') || '0');
         let currentScreen = 'screenMenu';
         let selectedLetter = 'A';
@@ -236,85 +262,55 @@
         let blendFilledSlots = [];
         let blendUsedChoices = new Set();
 
-        // ========== 音频（单例 Audio 对象，兼容微信） ==========
-        let ttsAudio = null;          // 复用的 Audio 元素
-        let audioUnlocked = false;
+        // ========== 音频系统（纯浏览器原生 TTS） ==========
+        let audioActivated = false;
 
-        function getTTSUrl(text) {
-            return 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text.replace(/,/g, ' ').trim()) + '&type=2';
-        }
-
-        function createAudioElement() {
-            if (!ttsAudio) {
-                ttsAudio = new Audio();
-                ttsAudio.preload = 'auto';
+        function activateAudio() {
+            if (audioActivated) return;
+            // 同步激活语音权限：播放空字符串
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // 清空历史
+                const u = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(u);
             }
-            return ttsAudio;
+            audioActivated = true;
+            document.getElementById('audioOverlay').style.display = 'none';
         }
-
-        function unlockAudio() {
-            if (audioUnlocked) return;
-            const a = createAudioElement();
-            // 静音数据激活
-            a.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-            a.play().then(() => {
-                audioUnlocked = true;
-                document.getElementById('activateOverlay').style.display = 'none';
-            }).catch(() => {
-                audioUnlocked = true;
-                document.getElementById('activateOverlay').style.display = 'none';
-            });
-        }
-
-        // 绑定激活事件
-        document.getElementById('activateOverlay').addEventListener('click', unlockAudio);
-        document.getElementById('activateBtn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            unlockAudio();
-        });
-        document.addEventListener('touchstart', unlockAudio, { once: true });
-        document.addEventListener('click', unlockAudio, { once: true });
 
         function playTTS(text) {
-            if (!audioUnlocked) {
-                unlockAudio();
-                setTimeout(() => playTTS(text), 300);
-                return;
+            if (!audioActivated) return;
+            const clean = text.replace(/,/g, ' ').trim();
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // 每次播放前取消，防止卡死
+                const u = new SpeechSynthesisUtterance(clean);
+                u.lang = 'en-US';
+                u.rate = 0.85;    // 稍慢，适合学发音
+                u.pitch = 1.1;    // 活泼
+                window.speechSynthesis.speak(u);
             }
-            const a = createAudioElement();
-            a.pause();
-            a.src = getTTSUrl(text);
-            a.play().catch(e => {
-                console.log('TTS播放失败，尝试降级:', e.message);
-                // 降级到浏览器语音合成
-                if ('speechSynthesis' in window) {
-                    const u = new SpeechSynthesisUtterance(text);
-                    u.lang = 'en-US';
-                    window.speechSynthesis.speak(u);
-                }
-            });
         }
 
-        // ========== 语音接口 ==========
         function speakLetter(letter) {
             const data = letterData[letter];
             if (!data) return;
             playTTS(letter + ' ' + data.word);
         }
-
         function speakWord(word, slowBlend = false) {
             if (slowBlend) {
-                const letters = word.split('');
-                const spaced = letters.join(' . ');
-                playTTS(spaced + ' . ' + word);
+                const arr = word.split('');
+                playTTS(arr.join(' . ') + ' . ' + word);
             } else {
                 playTTS(word);
             }
         }
+        function speakLetterSimple(letter) { playTTS(letter); }
 
-        function speakLetterSimple(letter) {
-            playTTS(letter);
-        }
+        // 绑定激活事件
+        document.getElementById('audioOverlay').addEventListener('click', activateAudio);
+        document.getElementById('activateBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            activateAudio();
+        });
 
         // ========== 屏幕切换 ==========
         function switchScreen(name) {
@@ -328,16 +324,16 @@
                 btnNextListen.style.display = 'none';
                 listenPrompt.textContent = '点击喇叭听发音，然后选出字母';
                 buildListenRound();
-                playListenSound();
+                if (audioActivated) playListenSound();
             } else if (name === 'screenBlend') {
                 blendFilledSlots = [];
                 blendUsedChoices = new Set();
                 btnNextBlend.style.display = 'none';
                 buildBlendRound();
-                if (blendCurrentWord) speakWord(blendCurrentWord.word, true);
+                if (blendCurrentWord && audioActivated) speakWord(blendCurrentWord.word, true);
             } else if (name === 'screenExplore') {
                 updateExploreDisplay();
-                speakLetter(selectedLetter);
+                if (audioActivated) speakLetter(selectedLetter);
             }
             document.getElementById(name).scrollTop = 0;
         }
@@ -367,9 +363,8 @@
         function nextListenQuestion() {
             listenAnswered = false;
             btnNextListen.style.display = 'none';
-            listenPrompt.textContent = '点击喇叭听发音，然后选出字母';
             buildListenRound();
-            playListenSound();
+            if (audioActivated) playListenSound();
         }
 
         function nextBlendWord() {
@@ -377,7 +372,7 @@
             blendUsedChoices = new Set();
             btnNextBlend.style.display = 'none';
             buildBlendRound();
-            if (blendCurrentWord) speakWord(blendCurrentWord.word, true);
+            if (blendCurrentWord && audioActivated) speakWord(blendCurrentWord.word, true);
         }
 
         // ========== 字母探索 ==========
@@ -414,16 +409,12 @@
 
         // ========== 听音选字母 ==========
         function buildListenRound() {
-            const letters = Object.keys(letterData);
-            const correctLetter = letters[Math.floor(Math.random() * letters.length)];
-            listenCorrectAnswer = correctLetter;
-
-            const distractors = [];
-            const pool = letters.filter(l => l !== correctLetter);
-            shuffleArray(pool);
-            for (let i = 0; i < 3; i++) distractors.push(pool[i]);
-
-            const options = [correctLetter, ...distractors];
+            const keys = Object.keys(letterData);
+            const correct = keys[Math.floor(Math.random() * keys.length)];
+            listenCorrectAnswer = correct;
+            const others = keys.filter(k => k !== correct);
+            shuffleArray(others);
+            const options = [correct, others[0], others[1], others[2]];
             shuffleArray(options);
 
             listenOptions.innerHTML = '';
@@ -442,24 +433,22 @@
             speakerBtn.classList.add('playing');
             playTTS(listenCorrectAnswer + ' ' + letterData[listenCorrectAnswer].word);
             setTimeout(() => speakerBtn.classList.remove('playing'), 800);
-            listenPrompt.textContent = '仔细听...是哪个字母呢？🤔';
         }
 
-        function handleListenChoice(chosenLetter, btnElement) {
+        function handleListenChoice(choice, btn) {
             if (listenAnswered) return;
             listenAnswered = true;
             speakerBtn.classList.remove('playing');
-
-            if (chosenLetter === listenCorrectAnswer) {
-                btnElement.classList.add('correct-flash');
+            if (choice === listenCorrectAnswer) {
+                btn.classList.add('correct-flash');
                 addStars(1);
-                spawnConfetti(btnElement);
+                spawnConfetti(btn);
                 celebrateOverlay.innerHTML = '<span class="celebrate-text">🎉</span>';
                 setTimeout(() => celebrateOverlay.innerHTML = '', 900);
                 listenPrompt.textContent = '太棒了！✅ 答对啦！';
                 playTTS('Good job');
             } else {
-                btnElement.classList.add('wrong-shake');
+                btn.classList.add('wrong-shake');
                 listenPrompt.textContent = '再试试吧～正确答案是 ' + listenCorrectAnswer;
                 document.querySelectorAll('.listen-option-btn').forEach(b => {
                     if (b.textContent === listenCorrectAnswer) b.classList.add('correct-flash');
@@ -477,19 +466,20 @@
             blendEmoji.textContent = wordData.emoji;
             blendWordHint.textContent = wordData.hint;
 
-            const wordLetters = wordData.word.split('');
-            const numSlots = wordLetters.length;
+            const letters = wordData.word.split('');
+            const slotsCount = letters.length;
+
             const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
             const distractors = [];
-            const pool = allLetters.filter(l => !wordLetters.includes(l));
+            const pool = allLetters.filter(l => !letters.includes(l));
             shuffleArray(pool);
             for (let i = 0; i < Math.min(2, pool.length); i++) distractors.push(pool[i].toUpperCase());
 
-            const allChoices = [...wordLetters.map(l => l.toUpperCase()), ...distractors];
-            shuffleArray(allChoices);
+            const choices = [...letters.map(l => l.toUpperCase()), ...distractors];
+            shuffleArray(choices);
 
             blendSlots.innerHTML = '';
-            for (let i = 0; i < numSlots; i++) {
+            for (let i = 0; i < slotsCount; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'blend-slot';
                 slot.dataset.index = i;
@@ -498,7 +488,7 @@
             }
 
             blendChoices.innerHTML = '';
-            allChoices.forEach(letter => {
+            choices.forEach(letter => {
                 const btn = document.createElement('button');
                 btn.className = 'blend-choice-btn';
                 btn.textContent = letter;
@@ -513,41 +503,39 @@
             updateBlendSlotHighlight();
         }
 
-        function handleBlendChoice(letter, btnElement) {
+        function handleBlendChoice(letter, btn) {
             if (!blendCurrentWord || blendUsedChoices.has(letter)) return;
             const wordLetters = blendCurrentWord.word.split('');
-            const nextIndex = blendFilledSlots.length;
-            const expectedLetter = wordLetters[nextIndex].toUpperCase();
+            const next = blendFilledSlots.length;
+            const expected = wordLetters[next].toUpperCase();
 
-            if (letter === expectedLetter) {
+            if (letter === expected) {
                 blendFilledSlots.push(letter);
                 blendUsedChoices.add(letter);
-                btnElement.classList.add('used');
+                btn.classList.add('used');
                 const slots = blendSlots.querySelectorAll('.blend-slot');
-                if (slots[nextIndex]) {
-                    slots[nextIndex].textContent = letter;
-                    slots[nextIndex].classList.add('filled');
+                if (slots[next]) {
+                    slots[next].textContent = letter;
+                    slots[next].classList.add('filled');
                 }
                 speakLetterSimple(letter);
                 updateBlendSlotHighlight();
-
                 if (blendFilledSlots.length === wordLetters.length) {
-                    const fullWord = blendCurrentWord.word;
-                    speakWord(fullWord, true);
+                    speakWord(blendCurrentWord.word, true);
                     addStars(2);
                     spawnConfetti(blendSlots);
                     celebrateOverlay.innerHTML = '<span class="celebrate-text">🌟</span>';
                     setTimeout(() => celebrateOverlay.innerHTML = '', 1000);
-                    blendWordHint.textContent = fullWord.toUpperCase() + ' 🎉';
+                    blendWordHint.textContent = blendCurrentWord.word.toUpperCase() + ' 🎉';
                     btnNextBlend.style.display = 'inline-flex';
                     blendChoices.querySelectorAll('.blend-choice-btn').forEach(b => {
                         if (!blendUsedChoices.has(b.dataset.letter)) b.classList.add('used');
                     });
                 }
             } else {
-                btnElement.classList.add('wrong-shake');
-                setTimeout(() => btnElement.classList.remove('wrong-shake'), 500);
-                blinkSlot(nextIndex);
+                btn.classList.add('wrong-shake');
+                setTimeout(() => btn.classList.remove('wrong-shake'), 500);
+                blinkSlot(next);
             }
         }
 
@@ -560,123 +548,81 @@
             });
         }
 
-        function blinkSlot(index) {
-            const slots = blendSlots.querySelectorAll('.blend-slot');
-            if (slots[index]) {
-                slots[index].style.borderColor = '#f87171';
-                slots[index].style.boxShadow = '0 0 0 6px rgba(248,113,113,0.2)';
-                setTimeout(() => {
-                    slots[index].style.borderColor = '';
-                    slots[index].style.boxShadow = '';
-                    updateBlendSlotHighlight();
-                }, 600);
+        function blinkSlot(i) {
+            const slot = blendSlots.querySelectorAll('.blend-slot')[i];
+            if (slot) {
+                slot.style.borderColor = '#f87171';
+                setTimeout(() => { slot.style.borderColor = ''; updateBlendSlotHighlight(); }, 600);
             }
         }
 
         // ========== 星星与特效 ==========
-        function updateStarDisplay(animate) {
+        function updateStarDisplay(anim) {
             starCountEl.textContent = totalStars;
-            if (animate) {
+            if (anim) {
                 starBadge.classList.remove('pulse');
                 void starBadge.offsetWidth;
                 starBadge.classList.add('pulse');
             }
             localStorage.setItem('phonicsFunStars', totalStars);
         }
-
-        function addStars(count) {
-            totalStars += count;
+        function addStars(n) {
+            totalStars += n;
             updateStarDisplay(true);
-            const rect = starBadge.getBoundingClientRect();
-            spawnScorePop(rect.left + rect.width/2, rect.top, '+' + count + '⭐');
+            const r = starBadge.getBoundingClientRect();
+            spawnScorePop(r.left + r.width/2, r.top, '+' + n + '⭐');
         }
-
-        function spawnConfetti(sourceElement) {
-            const rect = sourceElement.getBoundingClientRect();
-            const cx = rect.left + rect.width/2;
-            const cy = rect.top + rect.height/2;
-            const emojis = ['⭐','🌟','✨','💖','🎈','🌈','💫','🎀','🦋','🌸'];
-            for (let i = 0; i < 14; i++) {
+        function spawnConfetti(el) {
+            const r = el.getBoundingClientRect();
+            const cx = r.left + r.width/2, cy = r.top + r.height/2;
+            for (let i=0; i<14; i++) {
                 const p = document.createElement('span');
                 p.className = 'confetti-particle';
-                p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                p.style.left = cx + 'px';
-                p.style.top = cy + 'px';
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 60 + Math.random() * 140;
-                p.style.setProperty('--dx', Math.cos(angle) * distance + 'px');
-                p.style.setProperty('--dy', Math.sin(angle) * distance - 40 - Math.random() * 100 + 'px');
-                p.style.setProperty('--rot', (Math.random() - 0.5) * 720 + 'deg');
-                p.style.animationDuration = (0.8 + Math.random() * 1.0) + 's';
+                p.textContent = ['⭐','🌟','✨','💖','🎈','🌈','💫','🎀','🦋','🌸'][Math.floor(Math.random()*10)];
+                p.style.left = cx + 'px'; p.style.top = cy + 'px';
+                const a = Math.random()*Math.PI*2, d = 60+Math.random()*140;
+                p.style.setProperty('--dx', Math.cos(a)*d + 'px');
+                p.style.setProperty('--dy', Math.sin(a)*d - 40 - Math.random()*100 + 'px');
+                p.style.setProperty('--rot', (Math.random()-0.5)*720 + 'deg');
+                p.style.animationDuration = (0.8+Math.random()*1.0)+'s';
                 document.body.appendChild(p);
                 setTimeout(() => p.remove(), 1500);
             }
         }
-
-        function spawnScorePop(x, y, text) {
+        function spawnScorePop(x,y,text) {
             const pop = document.createElement('span');
             pop.className = 'score-pop';
             pop.textContent = text;
-            pop.style.left = x + 'px';
-            pop.style.top = y + 'px';
+            pop.style.left = x+'px'; pop.style.top = y+'px';
             document.body.appendChild(pop);
             setTimeout(() => pop.remove(), 1000);
         }
-
         function shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
+            for (let i=arr.length-1; i>0; i--) {
+                const j = Math.floor(Math.random()*(i+1));
                 [arr[i], arr[j]] = [arr[j], arr[i]];
             }
             return arr;
         }
 
-        // 数据定义（独立放置，避免变量提升问题）
+        // 数据
         const letterData = {
-            'A': { emoji: '🍎', word: 'apple' },
-            'B': { emoji: '⚽', word: 'ball' },
-            'C': { emoji: '🐱', word: 'cat' },
-            'D': { emoji: '🐶', word: 'dog' },
-            'E': { emoji: '🥚', word: 'egg' },
-            'F': { emoji: '🐟', word: 'fish' },
-            'G': { emoji: '🐐', word: 'goat' },
-            'H': { emoji: '🎩', word: 'hat' },
-            'I': { emoji: '🧊', word: 'igloo' },
-            'J': { emoji: '🍯', word: 'jam' },
-            'K': { emoji: '🪁', word: 'kite' },
-            'L': { emoji: '🦁', word: 'lion' },
-            'M': { emoji: '🌙', word: 'moon' },
-            'N': { emoji: '👃', word: 'nose' },
-            'O': { emoji: '🐙', word: 'octopus' },
-            'P': { emoji: '🐷', word: 'pig' },
-            'Q': { emoji: '👸', word: 'queen' },
-            'R': { emoji: '🐰', word: 'rabbit' },
-            'S': { emoji: '☀️', word: 'sun' },
-            'T': { emoji: '🔝', word: 'top' },
-            'U': { emoji: '☂️', word: 'umbrella' },
-            'V': { emoji: '🚐', word: 'van' },
-            'W': { emoji: '🌊', word: 'wave' },
-            'X': { emoji: '🦊', word: 'fox' },
-            'Y': { emoji: '🪀', word: 'yo-yo' },
-            'Z': { emoji: '🦓', word: 'zebra' },
+            'A':{emoji:'🍎',word:'apple'}, 'B':{emoji:'⚽',word:'ball'}, 'C':{emoji:'🐱',word:'cat'},
+            'D':{emoji:'🐶',word:'dog'}, 'E':{emoji:'🥚',word:'egg'}, 'F':{emoji:'🐟',word:'fish'},
+            'G':{emoji:'🐐',word:'goat'}, 'H':{emoji:'🎩',word:'hat'}, 'I':{emoji:'🧊',word:'igloo'},
+            'J':{emoji:'🍯',word:'jam'}, 'K':{emoji:'🪁',word:'kite'}, 'L':{emoji:'🦁',word:'lion'},
+            'M':{emoji:'🌙',word:'moon'}, 'N':{emoji:'👃',word:'nose'}, 'O':{emoji:'🐙',word:'octopus'},
+            'P':{emoji:'🐷',word:'pig'}, 'Q':{emoji:'👸',word:'queen'}, 'R':{emoji:'🐰',word:'rabbit'},
+            'S':{emoji:'☀️',word:'sun'}, 'T':{emoji:'🔝',word:'top'}, 'U':{emoji:'☂️',word:'umbrella'},
+            'V':{emoji:'🚐',word:'van'}, 'W':{emoji:'🌊',word:'wave'}, 'X':{emoji:'🦊',word:'fox'},
+            'Y':{emoji:'🪀',word:'yo-yo'}, 'Z':{emoji:'🦓',word:'zebra'}
         };
-
         const cvcWords = [
-            { word: 'cat', emoji: '🐱', hint: 'c-a-t' },
-            { word: 'dog', emoji: '🐶', hint: 'd-o-g' },
-            { word: 'pig', emoji: '🐷', hint: 'p-i-g' },
-            { word: 'hen', emoji: '🐔', hint: 'h-e-n' },
-            { word: 'bug', emoji: '🐛', hint: 'b-u-g' },
-            { word: 'sun', emoji: '☀️', hint: 's-u-n' },
-            { word: 'hat', emoji: '🎩', hint: 'h-a-t' },
-            { word: 'bed', emoji: '🛏️', hint: 'b-e-d' },
-            { word: 'cup', emoji: '🥤', hint: 'c-u-p' },
-            { word: 'fox', emoji: '🦊', hint: 'f-o-x' },
-            { word: 'bus', emoji: '🚌', hint: 'b-u-s' },
-            { word: 'pen', emoji: '🖊️', hint: 'p-e-n' },
-            { word: 'lip', emoji: '👄', hint: 'l-i-p' },
-            { word: 'pot', emoji: '🍯', hint: 'p-o-t' },
-            { word: 'nut', emoji: '🥜', hint: 'n-u-t' },
+            {word:'cat',emoji:'🐱',hint:'c-a-t'},{word:'dog',emoji:'🐶',hint:'d-o-g'},{word:'pig',emoji:'🐷',hint:'p-i-g'},
+            {word:'hen',emoji:'🐔',hint:'h-e-n'},{word:'bug',emoji:'🐛',hint:'b-u-g'},{word:'sun',emoji:'☀️',hint:'s-u-n'},
+            {word:'hat',emoji:'🎩',hint:'h-a-t'},{word:'bed',emoji:'🛏️',hint:'b-e-d'},{word:'cup',emoji:'🥤',hint:'c-u-p'},
+            {word:'fox',emoji:'🦊',hint:'f-o-x'},{word:'bus',emoji:'🚌',hint:'b-u-s'},{word:'pen',emoji:'🖊️',hint:'p-e-n'},
+            {word:'lip',emoji:'👄',hint:'l-i-p'},{word:'pot',emoji:'🍯',hint:'p-o-t'},{word:'nut',emoji:'🥜',hint:'n-u-t'}
         ];
 
         // 防手势缩放
