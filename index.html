@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Phonics Fun 🎈 自然拼读乐园</title>
     <style>
-        :root {
-            --pink: #f472b6;
-            --purple: #a78bfa;
-            --yellow: #fbbf24;
-        }
+        :root { --pink: #f472b6; --purple: #a78bfa; }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         html,body { height:100%; width:100%; overflow:hidden; font-family:system-ui; background:linear-gradient(160deg,#fdf2f8,#fce7f3,#ede9fe,#dbeafe,#fef3c7); display:flex; align-items:center; justify-content:center; }
         .app-container { width:100%; max-width:440px; height:100vh; display:flex; flex-direction:column; padding:12px 16px; }
@@ -102,7 +99,7 @@
         <div class="screen" id="screenListen">
             <button class="btn-back" onclick="switchScreen('screenMenu')">← 返回</button>
             <div style="text-align:center;">
-                <button class="speaker-btn" id="speakerBtn" onclick="speakQuestion()">🔊</button>
+                <button class="speaker-btn" id="speakerBtn" onclick="playListenSound()">🔊</button>
                 <p id="listenPrompt" style="font-size:15px;color:#6b5b73;">点击喇叭听发音，然后选出字母</p>
             </div>
             <div class="listen-options" id="listenOptions"></div>
@@ -124,7 +121,7 @@
     <div class="celebrate-overlay" id="celebrateOverlay"></div>
 
     <script>
-        // 全局状态
+        // ========== 状态 ==========
         let totalStars = parseInt(localStorage.getItem('phonicsFunStars') || '0');
         let currentScreen = 'screenMenu';
         let selectedLetter = 'A';
@@ -134,17 +131,58 @@
         let blendFilledSlots = [];
         let blendUsedChoices = new Set();
 
-        // 语音函数 (使用 SpeechSynthesis，手机端必须由用户手势触发)
-        function speak(text) {
-            if (!('speechSynthesis' in window)) return;
-            const synth = window.speechSynthesis;
-            synth.cancel(); // 重要：防止队列卡死
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = 'en-US';
-            utter.rate = 0.9;
-            synth.speak(utter);
+        // ========== 音频系统（完全移植自 KET 游戏） ==========
+        let _ttsAudio = null;
+        function getAudioElement() {
+            if (_ttsAudio) return _ttsAudio;
+            _ttsAudio = new Audio();
+            _ttsAudio.preload = 'auto';
+            _ttsAudio.setAttribute('playsinline', 'true');
+            _ttsAudio.setAttribute('webkit-playsinline', 'true');
+            return _ttsAudio;
         }
 
+        // 有道 TTS URL
+        function getTTSUrl(text) {
+            return 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2';
+        }
+
+        // 播放函数（优先有道，失败降级到 SpeechSynthesis 并选高质量语音）
+        function speak(text) {
+            if (!text) return;
+            const clean = text.replace(/,/g, ' ').trim();
+            const audio = getAudioElement();
+            audio.pause();
+            audio.src = getTTSUrl(clean) + '&_t=' + Date.now();
+            audio.play().catch(() => {
+                // 有道不可用，回退到系统语音，并尝试选择自然的声音
+                if ('speechSynthesis' in window) {
+                    const synth = window.speechSynthesis;
+                    synth.cancel(); // 防止卡死
+                    const utter = new SpeechSynthesisUtterance(clean);
+                    utter.lang = 'en-US';
+                    utter.rate = 0.9;
+                    // 尝试获取高质量语音
+                    const voices = synth.getVoices();
+                    const preferredVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Natural')) ||
+                                           voices.find(v => v.lang === 'en-US') ||
+                                           voices[0];
+                    if (preferredVoice) utter.voice = preferredVoice;
+                    synth.speak(utter);
+                }
+            });
+        }
+
+        // 首次用户交互时解锁音频（跟 KET 一模一样）
+        ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                const audio = getAudioElement();
+                audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+                audio.play().catch(()=>{});
+            }, { once: true });
+        });
+
+        // ========== 语音接口 ==========
         function speakLetter(letter) {
             const data = letterData[letter];
             if (!data) return;
@@ -162,30 +200,27 @@
 
         function speakLetterSimple(letter) { speak(letter); }
 
-        // 听音找字母的喇叭专用
-        function speakQuestion() {
+        function playListenSound() {
             if (listenAnswered) return;
             const btn = document.getElementById('speakerBtn');
             btn.classList.add('playing');
             speak(listenCorrectAnswer + ' ' + letterData[listenCorrectAnswer].word);
-            setTimeout(() => btn.classList.remove('playing'), 600);
+            setTimeout(() => btn.classList.remove('playing'), 800);
             document.getElementById('listenPrompt').textContent = '仔细听...是哪个字母呢？🤔';
         }
 
-        // 右上角重复按钮
         function repeatAction() {
             if (currentScreen === 'screenExplore') speakLetter(selectedLetter);
-            else if (currentScreen === 'screenListen') speakQuestion();
+            else if (currentScreen === 'screenListen') playListenSound();
             else if (currentScreen === 'screenBlend' && blendCurrentWord) speakWord(blendCurrentWord.word, true);
         }
 
-        // 屏幕切换
+        // ========== 屏幕切换 ==========
         function switchScreen(name) {
             currentScreen = name;
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(name).classList.add('active');
-            const repeatBtn = document.getElementById('btnRepeat');
-            repeatBtn.style.visibility = (name === 'screenMenu') ? 'hidden' : 'visible';
+            document.getElementById('btnRepeat').style.visibility = (name === 'screenMenu') ? 'hidden' : 'visible';
 
             if (name === 'screenListen') {
                 listenAnswered = false;
@@ -332,7 +367,6 @@
 
             blendFilledSlots = [];
             blendUsedChoices = new Set();
-            updateBlendSlotHighlight();
         }
 
         function handleBlendChoice(letter, btn) {
@@ -349,7 +383,11 @@
                 slots[nextIdx].textContent = letter;
                 slots[nextIdx].classList.add('filled');
                 speakLetterSimple(letter);
-                updateBlendSlotHighlight();
+                // 高亮下一个空槽
+                slots.forEach((s, i) => {
+                    s.classList.remove('active-slot');
+                    if (i === blendFilledSlots.length && i < wordLetters.length) s.classList.add('active-slot');
+                });
 
                 if (blendFilledSlots.length === wordLetters.length) {
                     speakWord(blendCurrentWord.word, true);
@@ -365,50 +403,13 @@
             }
         }
 
-        function updateBlendSlotHighlight() {
-            const slots = document.querySelectorAll('.blend-slot');
-            slots.forEach((s, i) => {
-                s.classList.remove('active-slot');
-                if (i === blendFilledSlots.length && blendFilledSlots.length < (blendCurrentWord?.word.length || 0)) {
-                    s.classList.add('active-slot');
-                }
-            });
-        }
-
-        // 星星与工具函数
-        function addStars(n) {
-            totalStars += n;
-            document.getElementById('starCount').textContent = totalStars;
-            localStorage.setItem('phonicsFunStars', totalStars);
-        }
-
-        function shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
+        // 星星与工具
+        function addStars(n) { totalStars += n; document.getElementById('starCount').textContent = totalStars; localStorage.setItem('phonicsFunStars', totalStars); }
+        function shuffleArray(arr) { for (let i=arr.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
 
         // 数据
-        const letterData = {
-            'A':{emoji:'🍎',word:'apple'}, 'B':{emoji:'⚽',word:'ball'}, 'C':{emoji:'🐱',word:'cat'},
-            'D':{emoji:'🐶',word:'dog'}, 'E':{emoji:'🥚',word:'egg'}, 'F':{emoji:'🐟',word:'fish'},
-            'G':{emoji:'🐐',word:'goat'}, 'H':{emoji:'🎩',word:'hat'}, 'I':{emoji:'🧊',word:'igloo'},
-            'J':{emoji:'🍯',word:'jam'}, 'K':{emoji:'🪁',word:'kite'}, 'L':{emoji:'🦁',word:'lion'},
-            'M':{emoji:'🌙',word:'moon'}, 'N':{emoji:'👃',word:'nose'}, 'O':{emoji:'🐙',word:'octopus'},
-            'P':{emoji:'🐷',word:'pig'}, 'Q':{emoji:'👸',word:'queen'}, 'R':{emoji:'🐰',word:'rabbit'},
-            'S':{emoji:'☀️',word:'sun'}, 'T':{emoji:'🔝',word:'top'}, 'U':{emoji:'☂️',word:'umbrella'},
-            'V':{emoji:'🚐',word:'van'}, 'W':{emoji:'🌊',word:'wave'}, 'X':{emoji:'🦊',word:'fox'},
-            'Y':{emoji:'🪀',word:'yo-yo'}, 'Z':{emoji:'🦓',word:'zebra'}
-        };
-        const cvcWords = [
-            {word:'cat',emoji:'🐱',hint:'c-a-t'},{word:'dog',emoji:'🐶',hint:'d-o-g'},{word:'pig',emoji:'🐷',hint:'p-i-g'},
-            {word:'hen',emoji:'🐔',hint:'h-e-n'},{word:'bug',emoji:'🐛',hint:'b-u-g'},{word:'sun',emoji:'☀️',hint:'s-u-n'},
-            {word:'hat',emoji:'🎩',hint:'h-a-t'},{word:'bed',emoji:'🛏️',hint:'b-e-d'},{word:'cup',emoji:'🥤',hint:'c-u-p'},
-            {word:'fox',emoji:'🦊',hint:'f-o-x'},{word:'bus',emoji:'🚌',hint:'b-u-s'},{word:'pen',emoji:'🖊️',hint:'p-e-n'},
-            {word:'lip',emoji:'👄',hint:'l-i-p'},{word:'pot',emoji:'🍯',hint:'p-o-t'},{word:'nut',emoji:'🥜',hint:'n-u-t'}
-        ];
+        const letterData = { A:{emoji:'🍎',word:'apple'}, B:{emoji:'⚽',word:'ball'}, C:{emoji:'🐱',word:'cat'}, D:{emoji:'🐶',word:'dog'}, E:{emoji:'🥚',word:'egg'}, F:{emoji:'🐟',word:'fish'}, G:{emoji:'🐐',word:'goat'}, H:{emoji:'🎩',word:'hat'}, I:{emoji:'🧊',word:'igloo'}, J:{emoji:'🍯',word:'jam'}, K:{emoji:'🪁',word:'kite'}, L:{emoji:'🦁',word:'lion'}, M:{emoji:'🌙',word:'moon'}, N:{emoji:'👃',word:'nose'}, O:{emoji:'🐙',word:'octopus'}, P:{emoji:'🐷',word:'pig'}, Q:{emoji:'👸',word:'queen'}, R:{emoji:'🐰',word:'rabbit'}, S:{emoji:'☀️',word:'sun'}, T:{emoji:'🔝',word:'top'}, U:{emoji:'☂️',word:'umbrella'}, V:{emoji:'🚐',word:'van'}, W:{emoji:'🌊',word:'wave'}, X:{emoji:'🦊',word:'fox'}, Y:{emoji:'🪀',word:'yo-yo'}, Z:{emoji:'🦓',word:'zebra'} };
+        const cvcWords = [ {word:'cat',emoji:'🐱',hint:'c-a-t'},{word:'dog',emoji:'🐶',hint:'d-o-g'},{word:'pig',emoji:'🐷',hint:'p-i-g'},{word:'hen',emoji:'🐔',hint:'h-e-n'},{word:'bug',emoji:'🐛',hint:'b-u-g'},{word:'sun',emoji:'☀️',hint:'s-u-n'},{word:'hat',emoji:'🎩',hint:'h-a-t'},{word:'bed',emoji:'🛏️',hint:'b-e-d'},{word:'cup',emoji:'🥤',hint:'c-u-p'},{word:'fox',emoji:'🦊',hint:'f-o-x'},{word:'bus',emoji:'🚌',hint:'b-u-s'},{word:'pen',emoji:'🖊️',hint:'p-e-n'},{word:'lip',emoji:'👄',hint:'l-i-p'},{word:'pot',emoji:'🍯',hint:'p-o-t'},{word:'nut',emoji:'🥜',hint:'n-u-t'} ];
 
         // 启动
         buildLetterGrid();
