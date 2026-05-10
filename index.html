@@ -7,8 +7,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Phonics Fun 🎈 自然拼读乐园</title>
     <style>
-        /* 完整保留之前的 CSS，此处为了节省篇幅略去部分，请将你原版完整 style 内容替换进来 */
-        :root { --bg-start: #fdf2f8; --bg-end: #ede9fe; --card-bg: #ffffff; --pink: #f472b6; --purple: #a78bfa; --yellow: #fbbf24; --green: #34d399; --text: #4a3550; --text-light: #6b5b73; --shadow: 0 4px 20px rgba(139,92,246,0.1); --shadow-lg: 0 12px 40px rgba(139,92,246,0.15); --radius: 22px; --radius-sm: 14px; }
+        :root {
+            --bg-start: #fdf2f8;
+            --bg-end: #ede9fe;
+            --card-bg: #ffffff;
+            --pink: #f472b6;
+            --purple: #a78bfa;
+            --yellow: #fbbf24;
+            --green: #34d399;
+            --text: #4a3550;
+            --text-light: #6b5b73;
+            --shadow: 0 4px 20px rgba(139,92,246,0.1);
+            --shadow-lg: 0 12px 40px rgba(139,92,246,0.15);
+            --radius: 22px;
+            --radius-sm: 14px;
+        }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         html,body { height:100%; width:100%; overflow:hidden; font-family:system-ui; background:linear-gradient(160deg,#fdf2f8,#fce7f3,#ede9fe,#dbeafe,#fef3c7); display:flex; align-items:center; justify-content:center; }
         .app-container { width:100%; max-width:440px; height:100vh; display:flex; flex-direction:column; padding:12px 16px; }
@@ -48,6 +61,8 @@
         .celebrate-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; display:flex; align-items:center; justify-content:center; }
         .celebrate-text { font-size:56px; animation:celebPop 0.8s ease; }
         @keyframes celebPop { 0%{transform:scale(0) rotate(-20deg);opacity:0} 50%{transform:scale(1.3) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:0} }
+        .confetti-particle { position:fixed; pointer-events:none; z-index:99; font-size:24px; animation:confettiFall 1.2s ease-out forwards; }
+        @keyframes confettiFall { 0%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(0.3);opacity:0} }
         .btn-back { display:inline-flex; align-items:center; gap:6px; background:var(--card-bg); border:2px solid #e8dff0; border-radius:50px; padding:10px 18px; font-size:15px; font-weight:600; cursor:pointer; color:var(--text); }
         .btn-next { background:var(--purple); color:#fff; border:none; border-radius:50px; padding:12px 24px; font-size:16px; font-weight:700; cursor:pointer; }
     </style>
@@ -92,7 +107,7 @@
                     <span class="big-letter" id="bigLetter">A</span>
                     <span class="example-emoji" id="exampleEmoji">🍎</span>
                 </div>
-                <div class="tap-hint">👆 点击大卡片听发音</div>
+                <div class="tap-hint">👆 点击大卡片或下方字母听发音</div>
             </div>
             <div class="letter-grid" id="letterGrid"></div>
         </div>
@@ -122,7 +137,6 @@
     <div class="celebrate-overlay" id="celebrateOverlay"></div>
 
     <script>
-        // ========== 全局 DOM 和状态 ==========
         const starBadge = document.getElementById('starBadge');
         const starCountEl = document.getElementById('starCount');
         const btnRepeat = document.getElementById('btnRepeat');
@@ -156,11 +170,8 @@
         let blendFilledSlots = [];
         let blendUsedChoices = new Set();
 
-        // ========== 音频系统（基于 KET 游戏的成功方案） ==========
+        // ========== 音频系统（与 KET 相同） ==========
         let _ttsAudio = null;
-        let _audioActivated = false;
-
-        // 初始化 Audio 元素
         function initAudioElement() {
             if (_ttsAudio) return _ttsAudio;
             _ttsAudio = new Audio();
@@ -170,60 +181,31 @@
             return _ttsAudio;
         }
 
-        // 解锁音频（用户首次交互时调用）
-        function unlockAudio() {
-            if (_audioActivated) return;
-            initAudioElement();
-            // 播放一段极短的静音片段来激活音频上下文
-            _ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-            _ttsAudio.play().then(() => {
-                _ttsAudio.pause();
-                _audioActivated = true;
-            }).catch(() => {
-                _audioActivated = true; // 即使失败也标记为已激活，允许后续尝试
-            });
-        }
-
-        // 在第一次触摸或点击时自动解锁（兼容所有平台）
+        // 首次交互解锁
         ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
-            document.addEventListener(evt, unlockAudio, { once: true });
+            document.addEventListener(evt, () => {
+                initAudioElement();
+                _ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+                _ttsAudio.play().catch(()=>{});
+            }, { once: true });
         });
 
-        // 有道 TTS 的 URL
-        function getTTSUrl(text) {
-            return 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2&_t=' + Date.now();
-        }
-
-        // 降级方案：使用浏览器内置语音
-        function speakNowFallback(text) {
-            if (!('speechSynthesis' in window)) return;
-            const synth = window.speechSynthesis;
-            synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.85;
-            synth.speak(utterance);
-        }
-
-        // 播放语音（主函数）
         function speakNow(text) {
             if (!text) return;
             const clean = text.replace(/,/g, ' ').trim();
             initAudioElement();
-
-            // 先尝试有道 TTS
             _ttsAudio.pause();
-            _ttsAudio.src = getTTSUrl(clean);
-            const playPromise = _ttsAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(() => {
-                    // 有道 TTS 失败，降级到 SpeechSynthesis
-                    speakNowFallback(clean);
-                });
-            }
+            _ttsAudio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(clean) + '&type=2&_t=' + Date.now();
+            _ttsAudio.play().catch(() => {
+                if ('speechSynthesis' in window) {
+                    const u = new SpeechSynthesisUtterance(clean);
+                    u.lang = 'en-US';
+                    u.rate = 0.85;
+                    window.speechSynthesis.speak(u);
+                }
+            });
         }
 
-        // 语音接口
         function speakLetter(letter) {
             const data = letterData[letter];
             if (!data) return;
@@ -239,7 +221,7 @@
         }
         function speakLetterSimple(letter) { speakNow(letter); }
 
-        // ========== 屏幕切换（保留自动播放，因为音频已解锁） ==========
+        // ========== 屏幕切换（彻底移除自动播放） ==========
         function switchScreen(name) {
             currentScreen = name;
             allScreens.forEach(s => s.classList.remove('active'));
@@ -251,17 +233,13 @@
                 btnNextListen.style.display = 'none';
                 listenPrompt.textContent = '点击喇叭听发音，然后选出字母';
                 buildListenRound();
-                // 自动朗读问题
-                speakNow(listenCorrectAnswer + ' ' + letterData[listenCorrectAnswer].word);
             } else if (name === 'screenBlend') {
                 blendFilledSlots = [];
                 blendUsedChoices = new Set();
                 btnNextBlend.style.display = 'none';
                 buildBlendRound();
-                if (blendCurrentWord) speakWord(blendCurrentWord.word, true);
             } else if (name === 'screenExplore') {
                 updateExploreDisplay();
-                if (selectedLetter) speakLetter(selectedLetter);
             }
             document.getElementById(name).scrollTop = 0;
         }
@@ -295,7 +273,6 @@
             listenAnswered = false;
             btnNextListen.style.display = 'none';
             buildListenRound();
-            speakNow(listenCorrectAnswer + ' ' + letterData[listenCorrectAnswer].word);
         }
 
         function nextBlendWord() {
@@ -303,7 +280,6 @@
             blendUsedChoices = new Set();
             btnNextBlend.style.display = 'none';
             buildBlendRound();
-            if (blendCurrentWord) speakWord(blendCurrentWord.word, true);
         }
 
         // ========== 字母探索 ==========
