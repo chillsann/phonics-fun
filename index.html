@@ -2,419 +2,1543 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="referrer" content="no-referrer">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Phonics Fun 🎈 自然拼读乐园</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>⚡ 闪电反应小达人</title>
     <style>
-        :root { --pink: #f472b6; --purple: #a78bfa; }
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-        html,body { height:100%; width:100%; overflow:hidden; font-family:system-ui; background:linear-gradient(160deg,#fdf2f8,#fce7f3,#ede9fe,#dbeafe,#fef3c7); display:flex; align-items:center; justify-content:center; }
-        .app-container { width:100%; max-width:440px; height:100vh; display:flex; flex-direction:column; padding:12px 16px; }
-        .top-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 6px; }
-        .star-badge { display:flex; align-items:center; gap:6px; background:#fff; border-radius:50px; padding:8px 16px; font-weight:700; font-size:17px; color:#4a3550; }
-        .btn-icon { width:44px; height:44px; border-radius:50%; background:#fff; border:none; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition:0.2s; }
-        .btn-icon:active { transform:scale(0.85); background:#fce7f3; }
-        .screen { display:none; flex-direction:column; flex:1; overflow-y:auto; gap:16px; padding:4px; }
-        .screen.active { display:flex; }
-        .menu-header { text-align:center; padding:20px 0 10px; }
-        .mascot { font-size:72px; animation:bounce 1.5s infinite; display:inline-block; }
-        @keyframes bounce { 0%,100%{transform:translateY(0)} 25%{transform:translateY(-22px)} 50%{transform:translateY(-6px)} 75%{transform:translateY(-16px)} }
-        .menu-title { font-size:30px; font-weight:800; color:#4a3550; }
-        .game-cards { display:flex; flex-direction:column; gap:14px; }
-        .game-card { display:flex; align-items:center; gap:14px; background:#fff; border-radius:22px; padding:16px; cursor:pointer; border:3px solid transparent; box-shadow:0 4px 10px rgba(0,0,0,0.05); }
-        .game-card:active { transform:scale(0.96); }
-        .card-emoji { font-size:44px; width:56px; text-align:center; }
-        .card-title { font-size:18px; font-weight:700; color:#4a3550; }
-        .card-desc { font-size:13px; color:#6b5b73; }
-        .big-letter-card { display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:130px; height:150px; background:#fff; border-radius:22px; box-shadow:0 8px 20px rgba(0,0,0,0.1); cursor:pointer; border:4px solid #fce7f3; margin:20px auto; }
-        .big-letter { font-size:64px; font-weight:900; color:#4a3550; }
-        .example-emoji { font-size:38px; margin-top:4px; }
-        .tap-hint { font-size:13px; color:#6b5b73; margin-top:6px; }
-        .letter-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
-        .letter-btn { aspect-ratio:1; border-radius:14px; border:2.5px solid #e8dff0; background:#fff; font-size:20px; font-weight:700; cursor:pointer; color:#4a3550; display:flex; align-items:center; justify-content:center; }
-        .letter-btn.selected { background:#fce7f3; border-color:var(--pink); }
-        .speaker-btn { width:90px; height:90px; border-radius:50%; border:4px solid #ede9fe; background:#fff; font-size:44px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; margin:15px auto; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition:0.2s; }
-        .speaker-btn:active { transform:scale(0.9); background:#ede9fe; }
-        .listen-options { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-        .listen-option-btn { aspect-ratio:1.3; border-radius:22px; border:3px solid #e8dff0; background:#fff; font-size:40px; font-weight:900; cursor:pointer; color:#4a3550; display:flex; align-items:center; justify-content:center; }
-        .listen-option-btn.correct-flash { background:#d1fae5; border-color:#34d399; }
-        .listen-option-btn.wrong-shake { animation:shake 0.5s; }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(4px)} }
-        .blend-slots { display:flex; justify-content:center; gap:14px; }
-        .blend-slot { width:64px; height:72px; border-radius:14px; border:3px dashed #d4c8e0; background:rgba(255,255,255,0.7); display:flex; align-items:center; justify-content:center; font-size:38px; font-weight:900; color:#4a3550; }
-        .blend-slot.filled { border-style:solid; border-color:var(--purple); background:#ede9fe; }
-        .blend-letter-choices { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; }
-        .blend-choice-btn { width:56px; height:60px; border-radius:14px; border:2.5px solid #e8dff0; background:#fff; font-size:30px; font-weight:800; cursor:pointer; color:#4a3550; display:flex; align-items:center; justify-content:center; }
-        .blend-choice-btn.used { opacity:0.35; pointer-events:none; }
-        .celebrate-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; display:flex; align-items:center; justify-content:center; }
-        .celebrate-text { font-size:56px; animation:celebPop 0.8s ease; }
-        @keyframes celebPop { 0%{transform:scale(0) rotate(-20deg);opacity:0} 50%{transform:scale(1.3) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:0} }
-        .btn-back { display:inline-flex; align-items:center; gap:6px; background:#fff; border:2px solid #e8dff0; border-radius:50px; padding:10px 18px; font-size:15px; font-weight:600; cursor:pointer; color:#4a3550; }
-        .btn-next { background:var(--purple); color:#fff; border:none; border-radius:50px; padding:12px 24px; font-size:16px; font-weight:700; cursor:pointer; display:none; margin:10px auto; }
+        :root {
+            --bg-start: #e8f5e9;
+            --bg-mid: #fff9e6;
+            --bg-end: #fce4ec;
+            --card-bg: #ffffff;
+            --text-primary: #3e2723;
+            --text-secondary: #5d4037;
+            --accent: #ff6d3a;
+            --accent-hover: #ff5722;
+            --success: #4caf50;
+            --danger: #f44336;
+            --gold: #ffb300;
+            --gold-light: #ffe082;
+            --cell-default: #f5f5f5;
+            --cell-hover: #e0e0e0;
+            --cell-active: #fff3e0;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.18);
+            --radius-sm: 12px;
+            --radius-md: 20px;
+            --radius-lg: 28px;
+            --radius-xl: 36px;
+            --font-title: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            --font-body: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-bounce: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            --transition-smooth: 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, #e3f2fd 0%, #fce4ec 30%, #fff9e6 60%, #e8f5e9 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            /* 移除 100dvh 以提高 iPad 兼容性 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 背景装饰浮动元素 */
+        .bg-decoration {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.55;
+            animation: floatAround 18s ease-in-out infinite;
+            font-size: 48px;
+        }
+        .bg-decoration:nth-child(1) {
+            top: 5%;
+            left: 8%;
+            animation-delay: 0s;
+            font-size: 42px;
+        }
+        .bg-decoration:nth-child(2) {
+            top: 12%;
+            right: 10%;
+            animation-delay: -6s;
+            font-size: 52px;
+        }
+        .bg-decoration:nth-child(3) {
+            bottom: 15%;
+            left: 12%;
+            animation-delay: -11s;
+            font-size: 38px;
+        }
+        .bg-decoration:nth-child(4) {
+            bottom: 8%;
+            right: 14%;
+            animation-delay: -3s;
+            font-size: 46px;
+        }
+        .bg-decoration:nth-child(5) {
+            top: 45%;
+            left: 3%;
+            animation-delay: -8s;
+            font-size: 34px;
+        }
+        .bg-decoration:nth-child(6) {
+            top: 40%;
+            right: 4%;
+            animation-delay: -14s;
+            font-size: 44px;
+        }
+
+        @keyframes floatAround {
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+            15% {
+                transform: translateY(-28px) rotate(6deg) scale(1.08);
+            }
+            30% {
+                transform: translateY(-10px) rotate(-3deg) scale(0.94);
+            }
+            45% {
+                transform: translateY(-22px) rotate(4deg) scale(1.05);
+            }
+            60% {
+                transform: translateY(8px) rotate(-5deg) scale(0.96);
+            }
+            75% {
+                transform: translateY(-16px) rotate(2deg) scale(1.03);
+            }
+            90% {
+                transform: translateY(4px) rotate(-1deg) scale(0.98);
+            }
+        }
+
+        /* 主容器 */
+        .game-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 520px;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 24px 20px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .game-container.shaking {
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            15% {
+                transform: translateX(-8px);
+            }
+            30% {
+                transform: translateX(8px);
+            }
+            45% {
+                transform: translateX(-6px);
+            }
+            60% {
+                transform: translateX(6px);
+            }
+            75% {
+                transform: translateX(-3px);
+            }
+            90% {
+                transform: translateX(3px);
+            }
+        }
+
+        /* 标题 */
+        .game-title {
+            font-family: var(--font-title);
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff6d3a 0%, #ff9800 40%, #ffb300 70%, #ff6d3a 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            animation: gradientShift 3s ease-in-out infinite;
+            letter-spacing: -0.02em;
+            text-align: center;
+            line-height: 1.2;
+        }
+        @keyframes gradientShift {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        /* 信息栏 */
+        .info-bar {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+        .info-item {
+            background: #fafafa;
+            border-radius: var(--radius-md);
+            padding: 10px 16px;
+            text-align: center;
+            flex: 1;
+            min-width: 70px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-fast);
+        }
+        .info-item .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #999;
+            font-weight: 600;
+        }
+        .info-item .value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            transition: var(--transition-fast);
+        }
+        .info-item.score .value {
+            color: #ff6d3a;
+        }
+        .info-item.combo .value {
+            color: #ff9800;
+        }
+        .info-item.timer .value {
+            color: #4caf50;
+        }
+        .info-item.timer.warning .value {
+            color: #f44336;
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.12);
+            }
+        }
+
+        /* 游戏网格 */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 420px;
+            aspect-ratio: 1 / 1;
+            padding: 6px;
+        }
+        .cell {
+            background: var(--cell-default);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 56px;
+            transition: var(--transition-fast);
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04), var(--shadow-sm);
+            min-height: 70px;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            border: 3px solid transparent;
+        }
+        .cell:hover {
+            background: var(--cell-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .cell:active {
+            transform: scale(0.95);
+            transition: var(--transition-fast);
+        }
+        .cell.active {
+            background: #fff8e1;
+            border-color: #ffcc02;
+            box-shadow: 0 0 0 6px rgba(255, 179, 0, 0.2), var(--shadow-md);
+            animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .cell.active .cell-emoji {
+            animation: bounceIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes popIn {
+            0% {
+                transform: scale(0.85);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.15);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .cell.hit-success {
+            background: #c8e6c9 !important;
+            border-color: #4caf50 !important;
+            box-shadow: 0 0 0 8px rgba(76, 175, 80, 0.3) !important;
+            transition: var(--transition-fast);
+        }
+        .cell.hit-fail {
+            background: #ffcdd2 !important;
+            border-color: #f44336 !important;
+            box-shadow: 0 0 0 8px rgba(244, 67, 54, 0.3) !important;
+            transition: var(--transition-fast);
+        }
+        .cell.missed {
+            background: #e0e0e0 !important;
+            border-color: #bbb !important;
+            transition: var(--transition-fast);
+        }
+        .cell .cell-emoji {
+            position: relative;
+            z-index: 1;
+            pointer-events: none;
+            transition: var(--transition-fast);
+        }
+        .cell .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            transform: scale(0);
+            animation: rippleOut 0.5s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes rippleOut {
+            to {
+                transform: scale(3.5);
+                opacity: 0;
+            }
+        }
+
+        /* 按钮 */
+        .btn {
+            font-family: var(--font-body);
+            font-size: 1.05rem;
+            font-weight: 700;
+            padding: 14px 32px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-bounce);
+            letter-spacing: 0.03em;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        .btn:active {
+            transform: scale(0.94);
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6d3a 0%, #ff8a50 100%);
+            color: #fff;
+            font-size: 1.2rem;
+            padding: 16px 40px;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 8px 28px rgba(255, 109, 58, 0.4);
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #fff;
+            color: var(--accent);
+            border: 2px solid #ffccbc;
+        }
+        .btn-secondary:hover {
+            background: #fff5f0;
+            border-color: var(--accent);
+        }
+        .btn-small {
+            font-size: 0.9rem;
+            padding: 10px 20px;
+            border-radius: 30px;
+        }
+
+        /* 难度选择 */
+        .difficulty-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .diff-btn {
+            padding: 10px 18px;
+            border-radius: 30px;
+            border: 2px solid #e0e0e0;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: var(--transition-bounce);
+            color: #666;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .diff-btn:hover {
+            border-color: #ffab91;
+            color: #ff6d3a;
+        }
+        .diff-btn.selected {
+            background: #fff3e0;
+            border-color: #ff6d3a;
+            color: #ff6d3a;
+            box-shadow: 0 2px 12px rgba(255, 109, 58, 0.25);
+            transform: scale(1.04);
+        }
+
+        /* 模态弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            padding: 28px 22px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal h2 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .modal .result-emoji {
+            font-size: 72px;
+            display: block;
+            margin: 12px 0;
+            animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal .result-grade {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffb300, #ff8f00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            margin: 4px 0;
+        }
+        .modal .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            color: #555;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .modal .stat-row .stat-val {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* 连击提示 */
+        .combo-toast {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #ff9800;
+            text-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
+            pointer-events: none;
+            z-index: 50;
+            white-space: nowrap;
+            transition: none;
+        }
+        .combo-toast.show {
+            animation: toastPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes toastPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            30% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* 粒子 */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 60;
+            font-size: 20px;
+            animation: particleFly 0.7s ease-out forwards;
+        }
+        @keyframes particleFly {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--dx), var(--dy)) scale(0.2);
+                opacity: 0;
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 16px 10px 20px;
+                border-radius: var(--radius-md);
+                gap: 12px;
+            }
+            .game-title {
+                font-size: 1.5rem;
+            }
+            .game-grid {
+                gap: 8px;
+                max-width: 340px;
+                padding: 2px;
+            }
+            .cell {
+                font-size: 40px;
+                border-radius: var(--radius-md);
+                min-height: 55px;
+                border-width: 2px;
+            }
+            .cell.active {
+                box-shadow: 0 0 0 4px rgba(255, 179, 0, 0.2), var(--shadow-md);
+            }
+            .cell.hit-success {
+                box-shadow: 0 0 0 5px rgba(76, 175, 80, 0.3) !important;
+            }
+            .cell.hit-fail {
+                box-shadow: 0 0 0 5px rgba(244, 67, 54, 0.3) !important;
+            }
+            .info-item {
+                padding: 8px 10px;
+            }
+            .info-item .value {
+                font-size: 1.2rem;
+            }
+            .btn {
+                font-size: 0.95rem;
+                padding: 12px 24px;
+            }
+            .btn-primary {
+                font-size: 1.05rem;
+                padding: 14px 30px;
+            }
+            .modal {
+                padding: 20px 16px;
+            }
+            .modal h2 {
+                font-size: 1.4rem;
+            }
+            .combo-toast {
+                font-size: 1.3rem;
+            }
+            .bg-decoration {
+                font-size: 28px !important;
+            }
+        }
+        @media (max-width: 360px) {
+            .game-grid {
+                gap: 6px;
+                max-width: 280px;
+            }
+            .cell {
+                font-size: 32px;
+                min-height: 44px;
+                border-radius: 14px;
+            }
+            .game-title {
+                font-size: 1.3rem;
+            }
+            .info-item .value {
+                font-size: 1rem;
+            }
+            .info-item .label {
+                font-size: 0.6rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="app-container" id="appContainer">
-        <div class="top-bar">
-            <button class="btn-icon" onclick="switchScreen('screenMenu')">🏠</button>
-            <div class="star-badge" id="starBadge"><span>⭐</span> <span id="starCount">0</span></div>
-            <button class="btn-icon" id="btnRepeat" style="visibility:hidden;" onclick="repeatAction()">🔊</button>
+
+    <!-- 背景装饰 -->
+    <span class="bg-decoration" aria-hidden="true">🌟</span>
+    <span class="bg-decoration" aria-hidden="true">🐱</span>
+    <span class="bg-decoration" aria-hidden="true">⭐</span>
+    <span class="bg-decoration" aria-hidden="true">🐶</span>
+    <span class="bg-decoration" aria-hidden="true">✨</span>
+    <span class="bg-decoration" aria-hidden="true">🐰</span>
+
+    <!-- 游戏主容器 -->
+    <div class="game-container" id="gameContainer">
+        <!-- 标题 -->
+        <h1 class="game-title" id="gameTitle">⚡ 闪电反应小达人</h1>
+
+        <!-- 信息栏 -->
+        <div class="info-bar" id="infoBar">
+            <div class="info-item score">
+                <div class="label">🌟 得分</div>
+                <div class="value" id="scoreDisplay">0</div>
+            </div>
+            <div class="info-item combo">
+                <div class="label">🔥 连击</div>
+                <div class="value" id="comboDisplay">0</div>
+            </div>
+            <div class="info-item timer" id="timerItem">
+                <div class="label">⏱ 时间</div>
+                <div class="value" id="timerDisplay">60</div>
+            </div>
         </div>
 
-        <div class="screen active" id="screenMenu">
-            <div class="menu-header">
-                <div class="mascot">🦉</div>
-                <div class="menu-title">Phonics Fun!</div>
-                <p style="color:#6b5b73;">自然拼读乐园 · 点击开始</p>
-            </div>
-            <div class="game-cards">
-                <div class="game-card" onclick="switchScreen('screenExplore')">
-                    <div class="card-emoji">🔤</div>
-                    <div><div class="card-title">字母声音探索</div><div class="card-desc">点击字母听发音</div></div>
-                </div>
-                <div class="game-card" onclick="switchScreen('screenListen')">
-                    <div class="card-emoji">👂</div>
-                    <div><div class="card-title">听音找字母</div><div class="card-desc">听发音，选字母</div></div>
-                </div>
-                <div class="game-card" onclick="switchScreen('screenBlend')">
-                    <div class="card-emoji">🧩</div>
-                    <div><div class="card-title">拼读小火车</div><div class="card-desc">拼字母，读单词</div></div>
-                </div>
-            </div>
+        <!-- 游戏网格 -->
+        <div class="game-grid" id="gameGrid">
+            <!-- 9个格子由JS动态生成 -->
         </div>
 
-        <div class="screen" id="screenExplore">
-            <button class="btn-back" onclick="switchScreen('screenMenu')">← 返回</button>
-            <div style="text-align:center;">
-                <div class="big-letter-card" onclick="speakLetter(selectedLetter)">
-                    <span class="big-letter" id="bigLetter">A</span>
-                    <span class="example-emoji" id="exampleEmoji">🍎</span>
-                </div>
-                <div class="tap-hint">👆 点击大卡片或下方字母听发音</div>
+        <!-- 按钮区域 -->
+        <div id="buttonArea">
+            <button class="btn btn-primary" id="btnStart" title="开始游戏">🎮 开始游戏</button>
+            <div class="difficulty-selector" id="difficultySelector" style="margin-top:10px;">
+                <button class="diff-btn" data-diff="easy" title="简单模式：90秒">🌱 简单</button>
+                <button class="diff-btn selected" data-diff="normal" title="普通模式：60秒">⚡ 普通</button>
+                <button class="diff-btn" data-diff="hard" title="困难模式：40秒">🔥 困难</button>
             </div>
-            <div class="letter-grid" id="letterGrid"></div>
-        </div>
-
-        <div class="screen" id="screenListen">
-            <button class="btn-back" onclick="switchScreen('screenMenu')">← 返回</button>
-            <div style="text-align:center;">
-                <button class="speaker-btn" id="speakerBtn" onclick="playListenSound()">🔊</button>
-                <p id="listenPrompt" style="font-size:15px;color:#6b5b73;">点击喇叭听发音，然后选出字母</p>
-            </div>
-            <div class="listen-options" id="listenOptions"></div>
-            <button class="btn-next" id="btnNextListen" onclick="nextListenQuestion()">下一题 →</button>
-        </div>
-
-        <div class="screen" id="screenBlend">
-            <button class="btn-back" onclick="switchScreen('screenMenu')">← 返回</button>
-            <div style="text-align:center;">
-                <div id="blendEmoji" style="font-size:80px;">🐱</div>
-                <div id="blendWordHint" style="font-size:14px;color:#6b5b73;">_ _ _</div>
-            </div>
-            <div class="blend-slots" id="blendSlots"></div>
-            <div class="blend-letter-choices" id="blendChoices"></div>
-            <button class="btn-next" id="btnNextBlend" onclick="nextBlendWord()">下一个单词 →</button>
         </div>
     </div>
 
-    <div class="celebrate-overlay" id="celebrateOverlay"></div>
+    <!-- 连击提示 -->
+    <div class="combo-toast" id="comboToast"></div>
+
+    <!-- 结果弹窗 -->
+    <div class="modal-overlay" id="resultOverlay" style="display:none;">
+        <div class="modal" id="resultModal">
+            <span class="result-emoji" id="resultEmoji">🏆</span>
+            <h2 id="resultTitle">太棒了！</h2>
+            <div class="result-grade" id="resultGrade">S</div>
+            <div id="resultStats"></div>
+            <button class="btn btn-primary" id="btnRetry" style="margin-top:16px;">🔄 再来一次</button>
+            <button class="btn btn-secondary btn-small" id="btnHome" style="margin-top:8px;">🏠 返回首页</button>
+        </div>
+    </div>
 
     <script>
-        // ========== 状态 ==========
-        let totalStars = parseInt(localStorage.getItem('phonicsFunStars') || '0');
-        let currentScreen = 'screenMenu';
-        let selectedLetter = 'A';
-        let listenCorrectAnswer = '';
-        let listenAnswered = false;
-        let blendCurrentWord = null;
-        let blendFilledSlots = [];
-        let blendUsedChoices = new Set();
+        (function() {
+            // ==================== DOM 元素 ====================
+            const gameContainer = document.getElementById('gameContainer');
+            const gameGrid = document.getElementById('gameGrid');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const comboDisplay = document.getElementById('comboDisplay');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const timerItem = document.getElementById('timerItem');
+            const btnStart = document.getElementById('btnStart');
+            const buttonArea = document.getElementById('buttonArea');
+            const difficultySelector = document.getElementById('difficultySelector');
+            const comboToast = document.getElementById('comboToast');
+            const resultOverlay = document.getElementById('resultOverlay');
+            const resultEmoji = document.getElementById('resultEmoji');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultGrade = document.getElementById('resultGrade');
+            const resultStats = document.getElementById('resultStats');
+            const btnRetry = document.getElementById('btnRetry');
+            const btnHome = document.getElementById('btnHome');
+            const gameTitle = document.getElementById('gameTitle');
 
-        // ========== 音频系统（完全移植自 KET 游戏） ==========
-        let _ttsAudio = null;
-        function getAudioElement() {
-            if (_ttsAudio) return _ttsAudio;
-            _ttsAudio = new Audio();
-            _ttsAudio.preload = 'auto';
-            _ttsAudio.setAttribute('playsinline', 'true');
-            _ttsAudio.setAttribute('webkit-playsinline', 'true');
-            return _ttsAudio;
-        }
+            // ==================== 游戏状态 ====================
+            const STATE = {
+                IDLE: 'idle',
+                PLAYING: 'playing',
+                ENDED: 'ended',
+            };
 
-        // 有道 TTS URL
-        function getTTSUrl(text) {
-            return 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2';
-        }
+            let gameState = STATE.IDLE;
+            let score = 0;
+            let comboCount = 0;
+            let maxCombo = 0;
+            let totalClicks = 0;
+            let correctClicks = 0;
+            let timeLeft = 60;
+            let totalTime = 60;
+            let difficulty = 'normal'; // 'easy' | 'normal' | 'hard'
+            let activeCellIndex = -1;
+            let timerInterval = null;
+            let targetTimeout = null;
+            let hideTimeout = null;
+            let isProcessingClick = false;
+            let lastClickTime = 0;
+            let comboWindowMs = 1200; // 连击时间窗口
 
-        // 播放函数（优先有道，失败降级到 SpeechSynthesis 并选高质量语音）
-        function speak(text) {
-            if (!text) return;
-            const clean = text.replace(/,/g, ' ').trim();
-            const audio = getAudioElement();
-            audio.pause();
-            audio.src = getTTSUrl(clean) + '&_t=' + Date.now();
-            audio.play().catch(() => {
-                // 有道不可用，回退到系统语音，并尝试选择自然的声音
-                if ('speechSynthesis' in window) {
-                    const synth = window.speechSynthesis;
-                    synth.cancel(); // 防止卡死
-                    const utter = new SpeechSynthesisUtterance(clean);
-                    utter.lang = 'en-US';
-                    utter.rate = 0.9;
-                    // 尝试获取高质量语音
-                    const voices = synth.getVoices();
-                    const preferredVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Natural')) ||
-                                           voices.find(v => v.lang === 'en-US') ||
-                                           voices[0];
-                    if (preferredVoice) utter.voice = preferredVoice;
-                    synth.speak(utter);
+            // 难度参数
+            const DIFFICULTY_CONFIG = {
+                easy: {
+                    totalTime: 90,
+                    initialStayMs: 1800,
+                    minStayMs: 800,
+                    initialIntervalMs: 900,
+                    minIntervalMs: 500,
+                    label: '简单',
+                },
+                normal: {
+                    totalTime: 60,
+                    initialStayMs: 1400,
+                    minStayMs: 500,
+                    initialIntervalMs: 700,
+                    minIntervalMs: 300,
+                    label: '普通',
+                },
+                hard: {
+                    totalTime: 40,
+                    initialStayMs: 1000,
+                    minStayMs: 350,
+                    initialIntervalMs: 500,
+                    minIntervalMs: 200,
+                    label: '困难',
+                },
+            };
+
+            // 目标类型
+            const TARGET_TYPES = {
+                animal: {
+                    emojis: ['🐱', '🐶', '🐰', '🐼', '🐨', '🦊', '🐸', '🐵', '🐯', '🐮', '🐷', '🐥'],
+                    points: 10,
+                    weight: 77,
+                    soundType: 'click',
+                },
+                bomb: {
+                    emojis: ['💣', '💥'],
+                    points: -20,
+                    weight: 15,
+                    soundType: 'bomb',
+                },
+                star: {
+                    emojis: ['⭐', '🌟', '✨'],
+                    points: 35,
+                    weight: 8,
+                    soundType: 'star',
+                },
+            };
+
+            // 构建加权随机池
+            function buildTargetPool() {
+                const pool = [];
+                for (const [key, config] of Object.entries(TARGET_TYPES)) {
+                    for (let i = 0; i < config.weight; i++) {
+                        pool.push(key);
+                    }
                 }
-            });
-        }
-
-        // 首次用户交互时解锁音频（跟 KET 一模一样）
-        ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
-            document.addEventListener(evt, () => {
-                const audio = getAudioElement();
-                audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-                audio.play().catch(()=>{});
-            }, { once: true });
-        });
-
-        // ========== 语音接口 ==========
-        function speakLetter(letter) {
-            const data = letterData[letter];
-            if (!data) return;
-            speak(letter + ' ' + data.word);
-        }
-
-        function speakWord(word, slow = false) {
-            if (slow) {
-                const letters = word.split('');
-                speak(letters.join(' . ') + ' . ' + word);
-            } else {
-                speak(word);
+                return pool;
             }
-        }
+            const targetPool = buildTargetPool();
 
-        function speakLetterSimple(letter) { speak(letter); }
+            // ==================== 音频引擎 ====================
+            let audioCtx = null;
 
-        function playListenSound() {
-            if (listenAnswered) return;
-            const btn = document.getElementById('speakerBtn');
-            btn.classList.add('playing');
-            speak(listenCorrectAnswer + ' ' + letterData[listenCorrectAnswer].word);
-            setTimeout(() => btn.classList.remove('playing'), 800);
-            document.getElementById('listenPrompt').textContent = '仔细听...是哪个字母呢？🤔';
-        }
-
-        function repeatAction() {
-            if (currentScreen === 'screenExplore') speakLetter(selectedLetter);
-            else if (currentScreen === 'screenListen') playListenSound();
-            else if (currentScreen === 'screenBlend' && blendCurrentWord) speakWord(blendCurrentWord.word, true);
-        }
-
-        // ========== 屏幕切换 ==========
-        function switchScreen(name) {
-            currentScreen = name;
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(name).classList.add('active');
-            document.getElementById('btnRepeat').style.visibility = (name === 'screenMenu') ? 'hidden' : 'visible';
-
-            if (name === 'screenListen') {
-                listenAnswered = false;
-                document.getElementById('btnNextListen').style.display = 'none';
-                document.getElementById('listenPrompt').textContent = '点击喇叭听发音，然后选出字母';
-                buildListenRound();
-            } else if (name === 'screenBlend') {
-                blendFilledSlots = [];
-                blendUsedChoices = new Set();
-                document.getElementById('btnNextBlend').style.display = 'none';
-                buildBlendRound();
-            } else if (name === 'screenExplore') {
-                updateExploreDisplay();
-            }
-            document.getElementById(name).scrollTop = 0;
-        }
-
-        function nextListenQuestion() {
-            listenAnswered = false;
-            document.getElementById('btnNextListen').style.display = 'none';
-            document.getElementById('listenPrompt').textContent = '点击喇叭听发音，然后选出字母';
-            buildListenRound();
-        }
-
-        function nextBlendWord() {
-            blendFilledSlots = [];
-            blendUsedChoices = new Set();
-            document.getElementById('btnNextBlend').style.display = 'none';
-            buildBlendRound();
-        }
-
-        // ========== 字母探索 ==========
-        function buildLetterGrid() {
-            const grid = document.getElementById('letterGrid');
-            grid.innerHTML = '';
-            Object.keys(letterData).forEach(letter => {
-                const btn = document.createElement('button');
-                btn.className = 'letter-btn';
-                btn.textContent = letter;
-                btn.onclick = () => selectLetter(letter, btn);
-                grid.appendChild(btn);
+            // 提前解锁音频：首次用户交互时创建 AudioContext 并播放静音音频
+            ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
+                document.addEventListener(evt, () => {
+                    if (!audioCtx) {
+                        try {
+                            audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                        } catch (e) {
+                            audioCtx = null;
+                        }
+                    }
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                    // 播放静音音频彻底解锁 iOS 音频限制
+                    const unlockAudio = new Audio(
+                        'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+                    unlockAudio.play().catch(() => {});
+                }, { once: true });
             });
-            const first = grid.querySelector('.letter-btn');
-            if (first) first.classList.add('selected');
-        }
 
-        function selectLetter(letter, btn) {
-            selectedLetter = letter;
-            updateExploreDisplay();
-            document.querySelectorAll('.letter-grid .letter-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            speakLetter(letter);
-        }
-
-        function updateExploreDisplay() {
-            document.getElementById('bigLetter').textContent = selectedLetter;
-            document.getElementById('exampleEmoji').textContent = letterData[selectedLetter].emoji;
-            document.querySelectorAll('.letter-grid .letter-btn').forEach(b => {
-                b.classList.remove('selected');
-                if (b.textContent === selectedLetter) b.classList.add('selected');
-            });
-        }
-
-        // ========== 听音选字母 ==========
-        function buildListenRound() {
-            const keys = Object.keys(letterData);
-            const correct = keys[Math.floor(Math.random() * keys.length)];
-            listenCorrectAnswer = correct;
-            const others = keys.filter(k => k !== correct);
-            shuffleArray(others);
-            const options = [correct, others[0], others[1], others[2]];
-            shuffleArray(options);
-
-            const container = document.getElementById('listenOptions');
-            container.innerHTML = '';
-            options.forEach(letter => {
-                const btn = document.createElement('button');
-                btn.className = 'listen-option-btn';
-                btn.textContent = letter;
-                btn.onclick = () => checkListenAnswer(letter, btn);
-                container.appendChild(btn);
-            });
-        }
-
-        function checkListenAnswer(choice, btn) {
-            if (listenAnswered) return;
-            listenAnswered = true;
-            document.getElementById('speakerBtn').classList.remove('playing');
-            const allBtns = document.querySelectorAll('.listen-option-btn');
-            allBtns.forEach(b => b.style.pointerEvents = 'none');
-
-            if (choice === listenCorrectAnswer) {
-                btn.classList.add('correct-flash');
-                addStars(1);
-                document.getElementById('celebrateOverlay').innerHTML = '<span class="celebrate-text">🎉</span>';
-                setTimeout(() => celebrateOverlay.innerHTML = '', 800);
-                document.getElementById('listenPrompt').textContent = '太棒了！✅ 答对啦！';
-                speak('Good job');
-            } else {
-                btn.classList.add('wrong-shake');
-                document.getElementById('listenPrompt').textContent = '再试试吧～正确答案是 ' + listenCorrectAnswer;
-                allBtns.forEach(b => { if (b.textContent === listenCorrectAnswer) b.classList.add('correct-flash'); });
-                speak(listenCorrectAnswer);
-            }
-            document.getElementById('btnNextListen').style.display = 'inline-flex';
-        }
-
-        // ========== 拼读游戏 ==========
-        function buildBlendRound() {
-            const wordData = cvcWords[Math.floor(Math.random() * cvcWords.length)];
-            blendCurrentWord = wordData;
-            document.getElementById('blendEmoji').textContent = wordData.emoji;
-            document.getElementById('blendWordHint').textContent = wordData.hint;
-
-            const letters = wordData.word.split('');
-            const slots = document.getElementById('blendSlots');
-            slots.innerHTML = '';
-            for (let i = 0; i < letters.length; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'blend-slot';
-                slot.dataset.index = i;
-                if (i === 0) slot.classList.add('active-slot');
-                slots.appendChild(slot);
+            function initAudio() {
+                if (!audioCtx) {
+                    try {
+                        audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        audioCtx = null;
+                    }
+                }
+                // 不再调用 resume，因为全局事件已处理，但保留以防万一
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
             }
 
-            const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
-            const distractors = [];
-            const pool = allLetters.filter(l => !letters.includes(l));
-            shuffleArray(pool);
-            for (let i = 0; i < Math.min(2, pool.length); i++) distractors.push(pool[i].toUpperCase());
-            const choices = [...letters.map(l => l.toUpperCase()), ...distractors];
-            shuffleArray(choices);
+            function playTone(frequency, duration, type = 'sine', volume = 0.15) {
+                if (!audioCtx) return;
+                try {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(frequency, now);
+                    osc.frequency.exponentialRampToValueAtTime(frequency * 0.4, now + duration);
+                    gain.gain.setValueAtTime(volume, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + duration);
+                } catch (e) {
+                    // 静默处理音频错误
+                }
+            }
 
-            const choicesDiv = document.getElementById('blendChoices');
-            choicesDiv.innerHTML = '';
-            choices.forEach(letter => {
-                const btn = document.createElement('button');
-                btn.className = 'blend-choice-btn';
-                btn.textContent = letter;
-                btn.dataset.letter = letter;
-                btn.onclick = () => handleBlendChoice(letter, btn);
-                choicesDiv.appendChild(btn);
-            });
+            function playSound(type) {
+                if (!audioCtx) return;
+                switch (type) {
+                    case 'click':
+                        playTone(800, 0.12, 'sine', 0.12);
+                        setTimeout(() => playTone(1100, 0.08, 'sine', 0.08), 60);
+                        break;
+                    case 'star':
+                        playTone(1000, 0.1, 'triangle', 0.14);
+                        setTimeout(() => playTone(1400, 0.1, 'triangle', 0.14), 70);
+                        setTimeout(() => playTone(1800, 0.15, 'triangle', 0.12), 140);
+                        break;
+                    case 'bomb':
+                        playTone(60, 0.3, 'sawtooth', 0.2);
+                        playTone(40, 0.35, 'square', 0.15);
+                        break;
+                    case 'combo':
+                        playTone(900 + comboCount * 80, 0.1, 'sine', 0.1);
+                        break;
+                    case 'gameover_good':
+                        playTone(523, 0.2, 'sine', 0.12);
+                        setTimeout(() => playTone(659, 0.2, 'sine', 0.12), 150);
+                        setTimeout(() => playTone(784, 0.3, 'sine', 0.14), 300);
+                        break;
+                    case 'gameover_great':
+                        playTone(523, 0.15, 'sine', 0.13);
+                        setTimeout(() => playTone(659, 0.15, 'sine', 0.13), 130);
+                        setTimeout(() => playTone(784, 0.15, 'sine', 0.13), 260);
+                        setTimeout(() => playTone(1047, 0.35, 'sine', 0.16), 390);
+                        break;
+                    default:
+                        break;
+                }
+            }
 
-            blendFilledSlots = [];
-            blendUsedChoices = new Set();
-        }
+            // ==================== 粒子特效 ====================
+            function spawnParticles(x, y, emoji, count = 8) {
+                const particleEmojis = ['💫', '✨', '🌟', '💖', '🎉', '⭐', '🔥', '💛'];
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('span');
+                    particle.className = 'particle';
+                    particle.textContent = particleEmojis[Math.floor(Math.random() * particleEmojis.length)];
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+                    const distance = 40 + Math.random() * 70;
+                    particle.style.setProperty('--dx', Math.cos(angle) * distance + 'px');
+                    particle.style.setProperty('--dy', Math.sin(angle) * distance - 20 - Math.random() * 40 + 'px');
+                    particle.style.fontSize = (16 + Math.random() * 20) + 'px';
+                    document.body.appendChild(particle);
+                    // 动画结束后移除
+                    particle.addEventListener('animationend', () => {
+                        particle.remove();
+                    });
+                    // 兜底移除
+                    setTimeout(() => {
+                        if (particle.parentNode) particle.remove();
+                    }, 750);
+                }
+            }
 
-        function handleBlendChoice(letter, btn) {
-            if (!blendCurrentWord || blendUsedChoices.has(letter)) return;
-            const wordLetters = blendCurrentWord.word.split('');
-            const nextIdx = blendFilledSlots.length;
-            const expected = wordLetters[nextIdx].toUpperCase();
+            function spawnBombParticles(x, y) {
+                const particleEmojis = ['💢', '💥', '💣', '😱', '❌'];
+                for (let i = 0; i < 10; i++) {
+                    const particle = document.createElement('span');
+                    particle.className = 'particle';
+                    particle.textContent = particleEmojis[Math.floor(Math.random() * particleEmojis.length)];
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    const angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.3;
+                    const distance = 50 + Math.random() * 80;
+                    particle.style.setProperty('--dx', Math.cos(angle) * distance + 'px');
+                    particle.style.setProperty('--dy', Math.sin(angle) * distance - 15 + 'px');
+                    particle.style.fontSize = (18 + Math.random() * 24) + 'px';
+                    document.body.appendChild(particle);
+                    particle.addEventListener('animationend', () => {
+                        particle.remove();
+                    });
+                    setTimeout(() => {
+                        if (particle.parentNode) particle.remove();
+                    }, 750);
+                }
+            }
 
-            if (letter === expected) {
-                blendFilledSlots.push(letter);
-                blendUsedChoices.add(letter);
-                btn.classList.add('used');
-                const slots = document.querySelectorAll('.blend-slot');
-                slots[nextIdx].textContent = letter;
-                slots[nextIdx].classList.add('filled');
-                speakLetterSimple(letter);
-                // 高亮下一个空槽
-                slots.forEach((s, i) => {
-                    s.classList.remove('active-slot');
-                    if (i === blendFilledSlots.length && i < wordLetters.length) s.classList.add('active-slot');
+            // ==================== 连击提示 ====================
+            let toastTimeout = null;
+
+            function showComboToast() {
+                if (comboCount >= 3) {
+                    if (toastTimeout) clearTimeout(toastTimeout);
+                    comboToast.textContent =
+                        comboCount >= 20 ? `🔥 SUPER COMBO x${comboCount}! 🔥` :
+                        comboCount >= 10 ? `⚡ COMBO x${comboCount}!` :
+                        `✨ 连击 x${comboCount}!`;
+                    comboToast.classList.remove('show');
+                    void comboToast.offsetWidth; // 强制回流
+                    comboToast.classList.add('show');
+                    toastTimeout = setTimeout(() => {
+                        comboToast.classList.remove('show');
+                    }, 800);
+                }
+            }
+
+            // ==================== 游戏网格 ====================
+            const TOTAL_CELLS = 9;
+            const cells = [];
+
+            function createGrid() {
+                gameGrid.innerHTML = '';
+                cells.length = 0;
+                for (let i = 0; i < TOTAL_CELLS; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.setAttribute('data-index', i);
+                    cell.setAttribute('role', 'button');
+                    cell.setAttribute('aria-label', `格子 ${i + 1}`);
+                    cell.innerHTML = '<span class="cell-emoji"></span>';
+                    cell.addEventListener('pointerdown', (e) => handleCellClick(i, cell, e));
+                    gameGrid.appendChild(cell);
+                    cells.push(cell);
+                }
+            }
+
+            function clearAllCells() {
+                cells.forEach(cell => {
+                    cell.classList.remove('active', 'hit-success', 'hit-fail', 'missed');
+                    const emojiSpan = cell.querySelector('.cell-emoji');
+                    if (emojiSpan) emojiSpan.textContent = '';
                 });
-
-                if (blendFilledSlots.length === wordLetters.length) {
-                    speakWord(blendCurrentWord.word, true);
-                    addStars(2);
-                    document.getElementById('celebrateOverlay').innerHTML = '<span class="celebrate-text">🌟</span>';
-                    setTimeout(() => celebrateOverlay.innerHTML = '', 1000);
-                    document.getElementById('blendWordHint').textContent = blendCurrentWord.word.toUpperCase() + ' 🎉';
-                    document.getElementById('btnNextBlend').style.display = 'inline-flex';
-                }
-            } else {
-                btn.classList.add('wrong-shake');
-                setTimeout(() => btn.classList.remove('wrong-shake'), 500);
+                activeCellIndex = -1;
             }
-        }
 
-        // 星星与工具
-        function addStars(n) { totalStars += n; document.getElementById('starCount').textContent = totalStars; localStorage.setItem('phonicsFunStars', totalStars); }
-        function shuffleArray(arr) { for (let i=arr.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+            function activateCell(index, emoji) {
+                if (index < 0 || index >= TOTAL_CELLS) return;
+                clearAllCells();
+                activeCellIndex = index;
+                const cell = cells[index];
+                const emojiSpan = cell.querySelector('.cell-emoji');
+                if (emojiSpan) emojiSpan.textContent = emoji;
+                cell.classList.add('active');
+                // 添加涟漪效果
+                addRipple(cell);
+            }
 
-        // 数据
-        const letterData = { A:{emoji:'🍎',word:'apple'}, B:{emoji:'⚽',word:'ball'}, C:{emoji:'🐱',word:'cat'}, D:{emoji:'🐶',word:'dog'}, E:{emoji:'🥚',word:'egg'}, F:{emoji:'🐟',word:'fish'}, G:{emoji:'🐐',word:'goat'}, H:{emoji:'🎩',word:'hat'}, I:{emoji:'🧊',word:'igloo'}, J:{emoji:'🍯',word:'jam'}, K:{emoji:'🪁',word:'kite'}, L:{emoji:'🦁',word:'lion'}, M:{emoji:'🌙',word:'moon'}, N:{emoji:'👃',word:'nose'}, O:{emoji:'🐙',word:'octopus'}, P:{emoji:'🐷',word:'pig'}, Q:{emoji:'👸',word:'queen'}, R:{emoji:'🐰',word:'rabbit'}, S:{emoji:'☀️',word:'sun'}, T:{emoji:'🔝',word:'top'}, U:{emoji:'☂️',word:'umbrella'}, V:{emoji:'🚐',word:'van'}, W:{emoji:'🌊',word:'wave'}, X:{emoji:'🦊',word:'fox'}, Y:{emoji:'🪀',word:'yo-yo'}, Z:{emoji:'🦓',word:'zebra'} };
-        const cvcWords = [ {word:'cat',emoji:'🐱',hint:'c-a-t'},{word:'dog',emoji:'🐶',hint:'d-o-g'},{word:'pig',emoji:'🐷',hint:'p-i-g'},{word:'hen',emoji:'🐔',hint:'h-e-n'},{word:'bug',emoji:'🐛',hint:'b-u-g'},{word:'sun',emoji:'☀️',hint:'s-u-n'},{word:'hat',emoji:'🎩',hint:'h-a-t'},{word:'bed',emoji:'🛏️',hint:'b-e-d'},{word:'cup',emoji:'🥤',hint:'c-u-p'},{word:'fox',emoji:'🦊',hint:'f-o-x'},{word:'bus',emoji:'🚌',hint:'b-u-s'},{word:'pen',emoji:'🖊️',hint:'p-e-n'},{word:'lip',emoji:'👄',hint:'l-i-p'},{word:'pot',emoji:'🍯',hint:'p-o-t'},{word:'nut',emoji:'🥜',hint:'n-u-t'} ];
+            function addRipple(cell) {
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                const size = Math.max(cell.offsetWidth, cell.offsetHeight);
+                ripple.style.width = size * 0.4 + 'px';
+                ripple.style.height = size * 0.4 + 'px';
+                ripple.style.left = '50%';
+                ripple.style.top = '50%';
+                ripple.style.marginLeft = -(size * 0.2) + 'px';
+                ripple.style.marginTop = -(size * 0.2) + 'px';
+                cell.appendChild(ripple);
+                ripple.addEventListener('animationend', () => ripple.remove());
+                setTimeout(() => { if (ripple.parentNode) ripple.remove(); }, 550);
+            }
 
-        // 启动
-        buildLetterGrid();
-        buildListenRound();
-        buildBlendRound();
+            // ==================== 游戏逻辑 ====================
+            let currentTargetType = null;
+            let currentTargetEmoji = null;
+
+            function getRandomTarget() {
+                const roll = targetPool[Math.floor(Math.random() * targetPool.length)];
+                const config = TARGET_TYPES[roll];
+                const emoji = config.emojis[Math.floor(Math.random() * config.emojis.length)];
+                return { type: roll, emoji, points: config.points, soundType: config.soundType };
+            }
+
+            function getRandomCellIndex(excludeIndex = -1) {
+                let index;
+                do {
+                    index = Math.floor(Math.random() * TOTAL_CELLS);
+                } while (index === excludeIndex && TOTAL_CELLS > 1);
+                return index;
+            }
+
+            function getCurrentStayDuration() {
+                const config = DIFFICULTY_CONFIG[difficulty];
+                const progress = 1 - (timeLeft / totalTime);
+                const stayMs = config.initialStayMs - (config.initialStayMs - config.minStayMs) * progress;
+                return Math.max(config.minStayMs, stayMs);
+            }
+
+            function getCurrentIntervalDuration() {
+                const config = DIFFICULTY_CONFIG[difficulty];
+                const progress = 1 - (timeLeft / totalTime);
+                const intervalMs = config.initialIntervalMs - (config.initialIntervalMs - config.minIntervalMs) *
+                    progress;
+                return Math.max(config.minIntervalMs, intervalMs);
+            }
+
+            function spawnTarget() {
+                if (gameState !== STATE.PLAYING) return;
+
+                // 清除之前的定时器
+                if (hideTimeout) clearTimeout(hideTimeout);
+                if (targetTimeout) clearTimeout(targetTimeout);
+
+                clearAllCells();
+
+                // 随机选择目标和位置
+                const target = getRandomTarget();
+                currentTargetType = target.type;
+                currentTargetEmoji = target.emoji;
+                const cellIndex = getRandomCellIndex(activeCellIndex);
+
+                activateCell(cellIndex, target.emoji);
+
+                // 设置目标消失定时器
+                const stayDuration = getCurrentStayDuration();
+                hideTimeout = setTimeout(() => {
+                    if (gameState === STATE.PLAYING && activeCellIndex === cellIndex) {
+                        // 目标未被点击，错过
+                        markCellMissed(cellIndex);
+                        comboCount = 0;
+                        updateComboDisplay();
+                        clearAllCells();
+                        currentTargetType = null;
+                        currentTargetEmoji = null;
+                        // 短暂间隔后出现下一个
+                        const nextInterval = getCurrentIntervalDuration();
+                        targetTimeout = setTimeout(spawnTarget, nextInterval);
+                    }
+                }, stayDuration);
+
+                isProcessingClick = false;
+            }
+
+            function markCellMissed(index) {
+                if (index >= 0 && index < TOTAL_CELLS) {
+                    cells[index].classList.add('missed');
+                    setTimeout(() => {
+                        cells[index].classList.remove('missed');
+                    }, 350);
+                }
+            }
+
+            function handleCellClick(index, cell, event) {
+                if (gameState !== STATE.PLAYING) return;
+                if (isProcessingClick) return;
+                if (index !== activeCellIndex) {
+                    // 点击了空白格子，轻微反馈但不惩罚
+                    cell.style.transform = 'scale(0.93)';
+                    setTimeout(() => { cell.style.transform = ''; }, 120);
+                    return;
+                }
+
+                isProcessingClick = true;
+                totalClicks++;
+                correctClicks++;
+
+                // 清除隐藏定时器
+                if (hideTimeout) clearTimeout(hideTimeout);
+
+                // 获取点击位置用于粒子效果
+                const rect = cell.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+
+                // 处理连击
+                const now = Date.now();
+                if (now - lastClickTime < comboWindowMs && lastClickTime > 0) {
+                    comboCount++;
+                    if (comboCount > maxCombo) maxCombo = comboCount;
+                    if (comboCount >= 3) {
+                        playSound('combo');
+                        showComboToast();
+                    }
+                } else {
+                    comboCount = 1;
+                }
+                lastClickTime = now;
+
+                // 计算分数（连击加成）
+                const targetConfig = TARGET_TYPES[currentTargetType];
+                let pointGain = targetConfig.points;
+                if (comboCount >= 3 && pointGain > 0) {
+                    const comboBonus = Math.min(comboCount - 2, 8); // 最多8点连击加成
+                    pointGain += comboBonus;
+                }
+
+                if (pointGain > 0) {
+                    // 正确目标
+                    score += pointGain;
+                    cell.classList.add('hit-success');
+                    spawnParticles(cx, cy, currentTargetEmoji);
+                    playSound(targetConfig.soundType);
+                } else {
+                    // 炸弹
+                    score = Math.max(0, score + pointGain);
+                    cell.classList.add('hit-fail');
+                    spawnBombParticles(cx, cy);
+                    playSound('bomb');
+                    gameContainer.classList.add('shaking');
+                    setTimeout(() => gameContainer.classList.remove('shaking'), 400);
+                    comboCount = 0;
+                }
+
+                updateScoreDisplay();
+                updateComboDisplay();
+
+                // 短暂显示反馈后清除
+                const feedbackDuration = pointGain > 0 ? 200 : 350;
+                setTimeout(() => {
+                    cell.classList.remove('hit-success', 'hit-fail');
+                    clearAllCells();
+                    currentTargetType = null;
+                    currentTargetEmoji = null;
+                    // 下一个目标
+                    if (gameState === STATE.PLAYING) {
+                        const nextInterval = getCurrentIntervalDuration();
+                        targetTimeout = setTimeout(spawnTarget, nextInterval);
+                    }
+                    isProcessingClick = false;
+                }, feedbackDuration);
+
+                activeCellIndex = -1;
+            }
+
+            // ==================== 计时器 ====================
+            function startTimer() {
+                timeLeft = totalTime;
+                updateTimerDisplay();
+                timerItem.classList.remove('warning');
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimerDisplay();
+                    if (timeLeft <= 10) {
+                        timerItem.classList.add('warning');
+                    }
+                    if (timeLeft <= 0) {
+                        endGame();
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                timerItem.classList.remove('warning');
+            }
+
+            // ==================== UI 更新 ====================
+            function updateScoreDisplay() {
+                scoreDisplay.textContent = score;
+                // 数字跳动动画
+                scoreDisplay.style.transform = 'scale(1.2)';
+                setTimeout(() => { scoreDisplay.style.transform = 'scale(1)'; }, 150);
+            }
+
+            function updateComboDisplay() {
+                comboDisplay.textContent = comboCount;
+                if (comboCount >= 5) {
+                    comboDisplay.style.transform = 'scale(1.25)';
+                    setTimeout(() => { comboDisplay.style.transform = 'scale(1)'; }, 150);
+                }
+            }
+
+            function updateTimerDisplay() {
+                timerDisplay.textContent = timeLeft;
+            }
+
+            function resetUI() {
+                score = 0;
+                comboCount = 0;
+                maxCombo = 0;
+                totalClicks = 0;
+                correctClicks = 0;
+                lastClickTime = 0;
+                activeCellIndex = -1;
+                currentTargetType = null;
+                currentTargetEmoji = null;
+                isProcessingClick = false;
+                updateScoreDisplay();
+                updateComboDisplay();
+                updateTimerDisplay();
+                timerItem.classList.remove('warning');
+                clearAllCells();
+                scoreDisplay.style.transform = 'scale(1)';
+                comboDisplay.style.transform = 'scale(1)';
+            }
+
+            // ==================== 游戏流程 ====================
+            function startGame() {
+                initAudio();
+                resetUI();
+                const config = DIFFICULTY_CONFIG[difficulty];
+                totalTime = config.totalTime;
+                timeLeft = totalTime;
+                gameState = STATE.PLAYING;
+                updateTimerDisplay();
+
+                // 更新UI
+                btnStart.textContent = '🎯 游戏中...';
+                btnStart.disabled = true;
+                btnStart.style.opacity = '0.6';
+                btnStart.style.pointerEvents = 'none';
+                difficultySelector.style.pointerEvents = 'none';
+                difficultySelector.style.opacity = '0.5';
+                gameTitle.textContent = '⚡ 正在挑战中...';
+                timerItem.classList.remove('warning');
+
+                // 启动计时器
+                startTimer();
+
+                // 短暂延迟后出现第一个目标
+                targetTimeout = setTimeout(spawnTarget, 600);
+
+                // 更新按钮
+                updateDifficultyButtons();
+            }
+
+            function endGame() {
+                gameState = STATE.ENDED;
+                stopTimer();
+                if (hideTimeout) clearTimeout(hideTimeout);
+                if (targetTimeout) clearTimeout(targetTimeout);
+                clearAllCells();
+                isProcessingClick = false;
+                currentTargetType = null;
+                currentTargetEmoji = null;
+                activeCellIndex = -1;
+
+                // 更新UI
+                btnStart.textContent = '🎮 开始游戏';
+                btnStart.disabled = false;
+                btnStart.style.opacity = '1';
+                btnStart.style.pointerEvents = 'auto';
+                difficultySelector.style.pointerEvents = 'auto';
+                difficultySelector.style.opacity = '1';
+                gameTitle.textContent = '⚡ 闪电反应小达人';
+                timerItem.classList.remove('warning');
+                timerDisplay.textContent = '0';
+
+                // 显示结果
+                showResult();
+            }
+
+            function showResult() {
+                const accuracy = totalClicks > 0 ? Math.round((correctClicks / totalClicks) * 100) : 0;
+                let grade, emoji, title, gradeColor;
+
+                if (score >= 500) {
+                    grade = 'S';
+                    emoji = '👑';
+                    title = '传奇反应！';
+                    gradeColor = '#ffb300';
+                } else if (score >= 350) {
+                    grade = 'A';
+                    emoji = '🏆';
+                    title = '非常厉害！';
+                    gradeColor = '#ff8f00';
+                } else if (score >= 200) {
+                    grade = 'B';
+                    emoji = '🌟';
+                    title = '很不错哦！';
+                    gradeColor = '#ff9800';
+                } else if (score >= 100) {
+                    grade = 'C';
+                    emoji = '💪';
+                    title = '继续加油！';
+                    gradeColor = '#ff6d3a';
+                } else if (score >= 30) {
+                    grade = 'D';
+                    emoji = '🐣';
+                    title = '刚起步呢~';
+                    gradeColor = '#f44336';
+                } else {
+                    grade = 'E';
+                    emoji = '😅';
+                    title = '再试一次吧！';
+                    gradeColor = '#999';
+                }
+
+                // 保存最高分
+                const bestKey = `reactionGame_best_${difficulty}`;
+                const prevBest = parseInt(localStorage.getItem(bestKey) || '0', 10);
+                const isNewBest = score > prevBest;
+                if (isNewBest) {
+                    localStorage.setItem(bestKey, score);
+                }
+
+                resultEmoji.textContent = emoji;
+                resultTitle.textContent = title;
+                resultGrade.textContent = grade;
+                resultGrade.style.background = `linear-gradient(135deg, ${gradeColor}, ${gradeColor})`;
+                resultGrade.style.webkitBackgroundClip = 'text';
+                resultGrade.style.backgroundClip = 'text';
+                resultGrade.style.webkitTextFillColor = 'transparent';
+                resultGrade.style.color = 'transparent';
+
+                resultStats.innerHTML = `
+                    <div class="stat-row"><span>📊 总得分</span><span class="stat-val">${score}</span></div>
+                    <div class="stat-row"><span>🎯 命中次数</span><span class="stat-val">${correctClicks}</span></div>
+                    <div class="stat-row"><span>🔥 最大连击</span><span class="stat-val">${maxCombo}</span></div>
+                    <div class="stat-row"><span>📈 命中率</span><span class="stat-val">${accuracy}%</span></div>
+                    <div class="stat-row"><span>🏅 历史最佳</span><span class="stat-val">${Math.max(score, prevBest)}${isNewBest ? ' 🆕' : ''}</span></div>
+                    <div class="stat-row"><span>🎮 难度</span><span class="stat-val">${DIFFICULTY_CONFIG[difficulty].label}</span></div>
+                `;
+
+                resultOverlay.style.display = 'flex';
+
+                // 播放结束音效
+                if (score >= 300) {
+                    playSound('gameover_great');
+                } else if (score >= 100) {
+                    playSound('gameover_good');
+                }
+
+                // 延迟一下让动画播放
+                setTimeout(() => {
+                    resultOverlay.querySelector('.modal').style.animation = 'none';
+                    void resultOverlay.querySelector('.modal').offsetWidth;
+                    resultOverlay.querySelector('.modal').style.animation = 'slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                }, 50);
+            }
+
+            function hideResult() {
+                resultOverlay.style.display = 'none';
+            }
+
+            function resetToIdle() {
+                stopTimer();
+                if (hideTimeout) clearTimeout(hideTimeout);
+                if (targetTimeout) clearTimeout(targetTimeout);
+                gameState = STATE.IDLE;
+                resetUI();
+                hideResult();
+                btnStart.textContent = '🎮 开始游戏';
+                btnStart.disabled = false;
+                btnStart.style.opacity = '1';
+                btnStart.style.pointerEvents = 'auto';
+                difficultySelector.style.pointerEvents = 'auto';
+                difficultySelector.style.opacity = '1';
+                gameTitle.textContent = '⚡ 闪电反应小达人';
+                clearAllCells();
+            }
+
+            // ==================== 难度选择 ====================
+            function updateDifficultyButtons() {
+                const buttons = difficultySelector.querySelectorAll('.diff-btn');
+                buttons.forEach(btn => {
+                    const diff = btn.getAttribute('data-diff');
+                    if (diff === difficulty) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                });
+            }
+
+            difficultySelector.addEventListener('click', (e) => {
+                if (gameState === STATE.PLAYING) return;
+                const btn = e.target.closest('.diff-btn');
+                if (!btn) return;
+                const diff = btn.getAttribute('data-diff');
+                if (diff && DIFFICULTY_CONFIG[diff]) {
+                    difficulty = diff;
+                    updateDifficultyButtons();
+                    // 更新显示的最佳分数
+                    updateTimerDisplayPlaceholder();
+                }
+            });
+
+            function updateTimerDisplayPlaceholder() {
+                const config = DIFFICULTY_CONFIG[difficulty];
+                if (gameState === STATE.IDLE) {
+                    timerDisplay.textContent = config.totalTime;
+                    totalTime = config.totalTime;
+                }
+            }
+
+            // ==================== 按钮事件 ====================
+            btnStart.addEventListener('click', () => {
+                if (gameState === STATE.PLAYING) return;
+                initAudio();
+                hideResult();
+                startGame();
+            });
+
+            btnRetry.addEventListener('click', () => {
+                hideResult();
+                resetToIdle();
+                // 短暂延迟后开始
+                setTimeout(() => {
+                    initAudio();
+                    startGame();
+                }, 200);
+            });
+
+            btnHome.addEventListener('click', () => {
+                resetToIdle();
+                updateTimerDisplayPlaceholder();
+                updateDifficultyButtons();
+            });
+
+            // 点击弹窗遮罩关闭
+            resultOverlay.addEventListener('click', (e) => {
+                if (e.target === resultOverlay) {
+                    resetToIdle();
+                    updateTimerDisplayPlaceholder();
+                }
+            });
+
+            // ==================== 键盘快捷键 ====================
+            document.addEventListener('keydown', (e) => {
+                if (gameState === STATE.IDLE && e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    initAudio();
+                    startGame();
+                } else if (gameState === STATE.ENDED && (e.key === ' ' || e.key === 'Enter' || e.key ===
+                        'r')) {
+                    e.preventDefault();
+                    hideResult();
+                    resetToIdle();
+                    setTimeout(() => {
+                        initAudio();
+                        startGame();
+                    }, 200);
+                } else if (gameState === STATE.ENDED && e.key === 'Escape') {
+                    resetToIdle();
+                    updateTimerDisplayPlaceholder();
+                }
+                // 游戏中可以用数字键1-9点击对应格子
+                if (gameState === STATE.PLAYING && e.key >= '1' && e.key <= '9') {
+                    const index = parseInt(e.key) - 1;
+                    if (index === activeCellIndex && !isProcessingClick) {
+                        handleCellClick(index, cells[index], {});
+                    }
+                }
+            });
+
+            // ==================== 初始化 ====================
+            function init() {
+                createGrid();
+                const config = DIFFICULTY_CONFIG[difficulty];
+                totalTime = config.totalTime;
+                timerDisplay.textContent = totalTime;
+                updateDifficultyButtons();
+                gameState = STATE.IDLE;
+                resetUI();
+                hideResult();
+            }
+
+            // ==================== 防止意外退出（移除 beforeunload 以兼容 iPad） ====================
+            // 原 beforeunload 在 iPad Safari 中可能造成问题，已移除
+
+            // ==================== 页面可见性处理 ====================
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && gameState === STATE.PLAYING) {
+                    // 页面隐藏时暂停计时（简化处理：记录时间）
+                    // 这里我们简单地在页面恢复时不做特殊处理
+                    // 因为游戏时间很短，复杂的暂停逻辑可能引入bug
+                }
+            });
+
+            // ==================== 启动 ====================
+            init();
+            console.log('⚡ 闪电反应小达人 已就绪！');
+            console.log('🐱 点击可爱的小动物和星星来得分');
+            console.log('💣 避开炸弹！');
+            console.log('🔥 连续快速点击获得连击加成');
+            console.log('⌨ 键盘快捷键：空格键开始，数字键1-9点击对应格子');
+            console.log('📱 支持手机触摸和桌面鼠标');
+            console.log('💾 最高分自动保存到本地存储');
+        })();
     </script>
 </body>
 </html>
