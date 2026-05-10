@@ -50,7 +50,8 @@
         .letter-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
         .letter-btn { aspect-ratio:1; border-radius:var(--radius-sm); border:2.5px solid #e8dff0; background:var(--card-bg); font-size:20px; font-weight:700; cursor:pointer; color:var(--text); display:flex; align-items:center; justify-content:center; }
         .letter-btn.selected { background:#fce7f3; border-color:var(--pink); }
-        .speaker-btn { width:90px; height:90px; border-radius:50%; border:4px solid #ede9fe; background:var(--card-bg); font-size:44px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+        .speaker-btn { width:90px; height:90px; border-radius:50%; border:4px solid #ede9fe; background:var(--card-bg); font-size:44px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: all 0.2s; }
+        .speaker-btn.playing { border-color: var(--purple); box-shadow: 0 0 20px var(--purple); }
         .listen-options { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
         .listen-option-btn { aspect-ratio:1.3; border-radius:var(--radius); border:3px solid #e8dff0; background:var(--card-bg); font-size:40px; font-weight:900; cursor:pointer; color:var(--text); display:flex; align-items:center; justify-content:center; }
         .blend-slots { display:flex; justify-content:center; gap:14px; }
@@ -61,8 +62,6 @@
         .celebrate-overlay { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; display:flex; align-items:center; justify-content:center; }
         .celebrate-text { font-size:56px; animation:celebPop 0.8s ease; }
         @keyframes celebPop { 0%{transform:scale(0) rotate(-20deg);opacity:0} 50%{transform:scale(1.3) rotate(5deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:0} }
-        .confetti-particle { position:fixed; pointer-events:none; z-index:99; font-size:24px; animation:confettiFall 1.2s ease-out forwards; }
-        @keyframes confettiFall { 0%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(0.3);opacity:0} }
         .btn-back { display:inline-flex; align-items:center; gap:6px; background:var(--card-bg); border:2px solid #e8dff0; border-radius:50px; padding:10px 18px; font-size:15px; font-weight:600; cursor:pointer; color:var(--text); }
         .btn-next { background:var(--purple); color:#fff; border:none; border-radius:50px; padding:12px 24px; font-size:16px; font-weight:700; cursor:pointer; }
     </style>
@@ -137,6 +136,7 @@
     <div class="celebrate-overlay" id="celebrateOverlay"></div>
 
     <script>
+        // 全局 DOM 和状态（与之前相同）
         const starBadge = document.getElementById('starBadge');
         const starCountEl = document.getElementById('starCount');
         const btnRepeat = document.getElementById('btnRepeat');
@@ -170,33 +170,44 @@
         let blendFilledSlots = [];
         let blendUsedChoices = new Set();
 
-        // ========== 音频系统（与 KET 相同） ==========
-        let _ttsAudio = null;
-        function initAudioElement() {
-            if (_ttsAudio) return _ttsAudio;
-            _ttsAudio = new Audio();
-            _ttsAudio.preload = 'auto';
-            _ttsAudio.setAttribute('playsinline', 'true');
-            _ttsAudio.setAttribute('webkit-playsinline', 'true');
-            return _ttsAudio;
+        // ========== 音频系统（完全模仿 KET 游戏） ==========
+        let ttsAudio = null;
+
+        function initAudio() {
+            if (ttsAudio) return;
+            ttsAudio = new Audio();
+            ttsAudio.preload = 'auto';
+            ttsAudio.setAttribute('playsinline', 'true');
+            ttsAudio.setAttribute('webkit-playsinline', 'true');
         }
 
-        // 首次交互解锁
-        ['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
-            document.addEventListener(evt, () => {
-                initAudioElement();
-                _ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-                _ttsAudio.play().catch(()=>{});
-            }, { once: true });
-        });
+        // 首次触摸解锁
+        document.addEventListener('touchstart', function unlock() {
+            initAudio();
+            ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            ttsAudio.play().then(() => {
+                ttsAudio.pause();
+                ttsAudio.currentTime = 0;
+            }).catch(() => {});
+        }, { once: true });
+
+        document.addEventListener('click', function unlockClick() {
+            initAudio();
+            ttsAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            ttsAudio.play().then(() => {
+                ttsAudio.pause();
+                ttsAudio.currentTime = 0;
+            }).catch(() => {});
+        }, { once: true });
 
         function speakNow(text) {
-            if (!text) return;
+            if (!text || !ttsAudio) {
+                initAudio();
+            }
             const clean = text.replace(/,/g, ' ').trim();
-            initAudioElement();
-            _ttsAudio.pause();
-            _ttsAudio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(clean) + '&type=2&_t=' + Date.now();
-            _ttsAudio.play().catch(() => {
+            ttsAudio.pause();
+            ttsAudio.src = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(clean) + '&type=2&_t=' + Date.now();
+            ttsAudio.play().catch(() => {
                 if ('speechSynthesis' in window) {
                     const u = new SpeechSynthesisUtterance(clean);
                     u.lang = 'en-US';
@@ -206,6 +217,7 @@
             });
         }
 
+        // 语音接口
         function speakLetter(letter) {
             const data = letterData[letter];
             if (!data) return;
@@ -221,7 +233,7 @@
         }
         function speakLetterSimple(letter) { speakNow(letter); }
 
-        // ========== 屏幕切换（彻底移除自动播放） ==========
+        // ========== 屏幕切换（无自动播放） ==========
         function switchScreen(name) {
             currentScreen = name;
             allScreens.forEach(s => s.classList.remove('active'));
@@ -252,8 +264,13 @@
         function repeatAction() {
             if (currentScreen === 'screenExplore') speakLetter(selectedLetter);
             else if (currentScreen === 'screenListen') {
-                if (!listenAnswered) speakNow(listenCorrectAnswer + ' ' + letterData[listenCorrectAnswer].word);
-            } else if (currentScreen === 'screenBlend' && blendCurrentWord) speakWord(blendCurrentWord.word, true);
+                if (!listenAnswered) {
+                    speakerBtn.classList.add('playing');
+                    speakNow(listenCorrectAnswer + ' ' + letterData[listenCorrectAnswer].word);
+                    setTimeout(() => speakerBtn.classList.remove('playing'), 800);
+                }
+            }
+            else if (currentScreen === 'screenBlend' && blendCurrentWord) speakWord(blendCurrentWord.word, true);
         }
 
         function onBigLetterClick() {
